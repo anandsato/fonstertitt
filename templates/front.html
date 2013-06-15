@@ -1,0 +1,23 @@
+	{% extends "base.html" %}
+
+	{% block content %}
+	<div id="storage"></div>
+	<div id="connection"></div>
+	<div id="localvalues"></div>
+	<fieldset>
+		<form id="target" method="post" action="/input">
+			<input type="text" name="name" value="hello">
+			<input type="text" name="text" value="dude">
+
+			<input type="submit">
+			<div id="other">
+			  Trigger the handler
+			</div>
+			
+
+
+
+		</form>
+	</fieldset>
+
+	{% endblock %}

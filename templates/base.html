@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+ <!-- <link type="text/css" rel="stylesheet" href="/static/main.css" />-->
+
+  <title>Fönstertittaren</title>
+ <script src="js/jquery-1.10.1.min.js"></script>
+  <script type="text/javascript">
+    if(typeof(Storage)!=="undefined")
+  {
+    $("#storage").html("YEs, localstorage!");
+  // Yes! localStorage and sessionStorage support!
+  // Some code.....
+  }
+else
+  {
+  // Sorry! No web storage support..
+  }
+
+  if (navigator.onLine) {
+    $("#connection").html("Online!");
+  } else {
+    $("#connection").html("Offline");
+  }
+
+
+
+
+  $(document).ready(function() {
+      if(localStorage.formValues) {
+        console.log("offline storage submitted");
+        console.log("localStorage.formValues: "+ localStorage.formValues);
+        postForm($("#target").attr('action'), localStorage.formValues);
+        var localStorageKeys = Object.keys(localStorage);
+        console.log(localStorageKeys);
+        $("#localvalues").html(localStorageKeys);
+        //localStorage.removeItem("formValues");
+      }
+
+      $("#target").submit(function(){
+
+        event.preventDefault();
+        var formValues = $(this).serialize();
+        var url = $(this).attr('action');
+       postForm(url, formValues);
+      })
+
+      $("#other").click(function() {
+        $("#target").submit();
+    });
+  });
+
+  function postForm(url, formValues) {
+    // Post to server or post to web storage
+    if(navigator.onLine) {
+      console.log("Online");
+      $.post(url, formValues, function(data) {
+        console.log("Success: "+ data);
+      });
+    }
+    else {
+      console.log("Offline");
+      if(typeof(Storage) !== "undefined") {
+        console.log("Storage supported");
+        localStorage.setItem(localStorage.length + 1, formValues);
+        //localStorage.formValues = formValues;
+      }
+    }
+  }
+  </script>
+</head>
+
+<body>
+  <a href="#" class="main-title">
+    Fönstertittaren
+  </a>
+
+  <div id="content">
+  {% block content %}
+  {% endblock %}
+  </div>
+ 
+</body>
+
+</html>
