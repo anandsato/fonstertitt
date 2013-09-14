@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Ajax upload form</title>
+
+</head>
+<body>
+
+<form id="form" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+  <input type="text"  name="text" value="test"/>
+  <input type="text"  name="name" value="test" />
+  <input id="fileinput" data-maxwidth="300" data-maxheight="300" type="file" name="file[]" multiple/>
+  <input id="submit" type="submit" value="Store in local memory &rarr;">
+</form>
+<div id="localvalues"></div>
+<div id="preview"></div>
+<div id="test"></div>
+
+
+<script src="js/preprocess.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/jquery-1.10.1.min.js"></script>
+
+
+
+  <script>
+  $(document).ready(function(){
+    reloadSubmissions();
+
+    //$("#test").html(new Date().getTime());
+
+    //store submission in localstorage
+    $("#form").submit(function(){
+      console.log("click upload");    
+      var formValues = $(this).serialize();
+      var tm = new Date().getTime();
+      localStorage.setItem(tm, formValues);
+      reloadSubmissions();
+      return false;
+    });
+
+    //delete submitted item
+      $(document).on("click", "#localvalues .submission > a", function(){
+        localStorage.removeItem($(this).attr("id"));
+        alert("you deleted submission " + $(this).attr("id"));
+        reloadSubmissions();
+      });
+
+    //submit form entry
+		$(document).on("click", "div#localvalues .submission > button", function(){
+        console.log($(this).attr("id"));
+        console.log(window.localStorage.getItem($(this).attr("id")));
+		var formData = window.localStorage.getItem($(this).attr("id"));
+        $.post('/pic', formData).done(receivedData).fail(errorUploading);
+
+            /*
+            $.ajax({ 
+    		        url: '/pic',  //server script to process data
+    		        type: 'POST',
+    		        xhr: function() {  // custom xhr
+    		            var myXhr = $.ajaxSettings.xhr();
+    		            if(myXhr.upload){ // check if upload property exists
+    		                myXhr.upload.addEventListener('progress',progressHandlingFunction, false); // for handling the progress of the upload
+    		            }
+    		            return myXhr;
+    		        },
+    		        //Ajax events
+    		        //beforeSend: beforeSendHandler,
+    		        success: function(data){
+    		        	console.log(data);
+    		        },
+    		        //error: errorHandler,
+    		        // Form data
+    		        data: formData,
+    		        //Options to tell JQuery not to process data or worry about content-type
+    		        cache: false,
+    		        contentType: false,
+    		        processData: false
+    		    });*/
+		}); 
+	function progressHandlingFunction(e){
+	    if(e.lengthComputable){
+	        $('progress').attr({value:e.loaded,max:e.total});
+	    }
+	}
+
+    function submitEntry(txt) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/pic', true);
+        xhr.responseType = 'text';
+        xhr.onload = function(e) {
+            console.log(this.response);
+        };
+        xhr.send(txt);
+    }
+
+    function receivedData(data){
+        alert(data);
+    }
+
+    function errorUploading(data){
+        alert(data);
+    }
+
+    function reloadSubmissions() {
+    $("#localvalues").empty();
+        var i = 0, //i is standing for int
+        oJson = {}, //o is standing for object
+        sKey; //s is standing for string
+        while ((sKey = window.localStorage.key(i))) {
+          oJson[sKey] = window.localStorage.getItem(sKey);
+          i++;
+        }
+        //console.log(oJson);
+
+        for (var item in oJson) {
+          if (!isNaN(item)) {
+            //console.log(item + oJson[item]);
+           $("#localvalues").append(
+            "<div class=\"submission\" id=\"" + item +"\">Submission: " + item + 
+            " <button id=\"" + item  + "\">Submit Entry</button><a href='#'id='" + item +"'>Delete</a></div>"
+            );
+          }
+        }
+    }
+
+  });
+  </script>
+
+  <!-- Placeholders for messages set by event handlers -->
+  <p id="upload-status"></p>
+  <p id="progress"></p>
+  <pre id="result"></pre>
+
+</form>
+</body>
+</html>

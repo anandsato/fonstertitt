@@ -1,0 +1,42 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Test Array Bufferer</title>
+  <meta name="description" content="The HTML5 Herald">
+  <meta name="author" content="SitePoint">
+
+  <link rel="stylesheet" href="css/styles.css?v=1.0">
+
+</head>
+
+<form>
+<input type="file" name="file">
+<div id="test"></div>
+
+</form>
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script type="text/javascript">
+function fileToBlob(inputElement, callback) {
+    var fileReader = new FileReader();
+    fileReader.onload = function () {
+        callback(new Blob([this.result]));
+    }
+    fileReader.readAsArrayBuffer(inputElement.files[0]);
+}
+$(function(){
+	$("#test").html("hej");
+});
+
+
+
+
+</script>
+
+
+<body>
+
+</body>
+</html>
