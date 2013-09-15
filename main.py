@@ -95,9 +95,9 @@ class PictureTester(MainHandler):
 class ImageHandler(MainHandler):
     def get(self):
         greeting = Submission.get_by_id(int(self.request.get('id')))
-        if greeting.image:
+        if greeting.imagefile1:
         	self.response.headers['Content-Type'] = 'image/jpeg'
-        	self.response.out.write(greeting.image)
+        	self.response.out.write(greeting.imagefile1)
         else:
             self.error(404)
 
@@ -131,16 +131,42 @@ class SubmitExpando(MainHandler):
 				result = (e,query)
 				output.append(result)
 			se = Submission()
+			imagelist = ['imagedata1','imagedata2','imagedata3','imagedata4','imagedata5']
 			for o in output:
-				if o[0] == "file":
+				if o[0] in imagelist:
 					continue
 				setattr(se,o[0],o[1])
-			image = self.request.get('file')
-			if image:
-				image = image.split(',')[1]
-				image = str(image)
-				image = base64.b64decode(image)
-				se.image = db.Blob(image)
+			image1 = self.request.get('imagedata1')
+			image2 = self.request.get('imagedata2')
+			image3 = self.request.get('imagedata3')
+			image4 = self.request.get('imagedata4')
+			image5 = self.request.get('imagedata5')
+
+			if image1:
+				image1 = image1.split(',')[1]
+				image1 = str(image1)
+				image1 = base64.b64decode(image1)
+				se.imagefile1 = db.Blob(image1)
+			if image2:
+				image2 = image2.split(',')[1]
+				image2 = str(image2)
+				image2 = base64.b64decode(image2)
+				se.imagefile2 = db.Blob(image2)
+			if image3:
+				image3 = image3.split(',')[1]
+				image3 = str(image3)
+				image3 = base64.b64decode(image3)
+				se.imagefile3 = db.Blob(image3)
+			if image4:
+				image4 = image4.split(',')[1]
+				image4 = str(image4)
+				image4 = base64.b64decode(image4)
+				se.imagefile4 = db.Blob(image4)
+			if image5:
+				image5 = image5.split(',')[1]
+				image5 = str(image5)
+				image5 = base64.b64decode(image5)
+				se.imagefile5 = db.Blob(image5)
 			se.put()
 			self.write(se.key().id())
 

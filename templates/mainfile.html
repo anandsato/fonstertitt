@@ -55,7 +55,7 @@
 <script src="js/exif.js"></script> <!-- library to find orientation for uploaded images -->
 <script type="text/javascript" src="js/binaryajax.js"></script> <!-- helper library for exif.js -->
 <script src="js/megapix-image.js"></script> <!-- library which resizes images and unsqaush them on iOS -->
-<script src="js/megapix-image.test.js"></script> <!-- includes the functions which get the image dom and calls the image resize -->
+<script src="js/megapix-image.test.js"></script> <!-- includes the functions which gets the image DOM and calls the image resize -->
 
 <script>
 
@@ -137,6 +137,21 @@ $(document).ready(function(){
         $(".submitentry").addClass('ui-disabled');
       }
     }, 250);
+
+    //Image functions
+
+
+    //Remove uploaded/converted image i.e empty image src, remove hidden base64 image and its name and delete button.
+    $(document).on("click", ".del-image-input", function(){
+        imageId = $(this).attr("id");
+        console.log("you licked delete image" + imageId);
+        imageVar = "#outputImage" + imageId;
+        $("#outputImage" + imageId).remove(); //delete image
+        $(".imagename#" + imageId).remove(); //delete imagename
+        $(".del-image-input#" + imageId).remove(); //delete "remove image" handler.
+
+
+    });
 
 
 });

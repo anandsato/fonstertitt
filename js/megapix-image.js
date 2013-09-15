@@ -205,7 +205,7 @@ function insertAfter(referenceNode, newNode) {
   /**
    * Rendering megapix image into specified target element
    */
-  MegaPixImage.prototype.render = function(target, inputfile, options) {
+  MegaPixImage.prototype.render = function(target, options) {
     if (this.imageLoadListeners) {
       var _this = this;
       this.imageLoadListeners.push(function() { _this.render(target, options) });
@@ -214,6 +214,8 @@ function insertAfter(referenceNode, newNode) {
     options = options || {};
     var imgWidth = this.srcImage.naturalWidth, imgHeight = this.srcImage.naturalHeight,
         width = options.width, height = options.height,
+        outputname = options.output, //id of the hidden image input
+        imagename = options.imagename, //name of image
         maxWidth = options.maxWidth, maxHeight = options.maxHeight,
         doSquash = !this.blob || this.blob.type === 'image/jpeg';
     if (width && !height) {
@@ -238,15 +240,45 @@ function insertAfter(referenceNode, newNode) {
     var tagName = target.tagName.toLowerCase();
     if (tagName === 'img') {
       target.src = renderImageToDataURL(this.srcImage, opt, doSquash);
-      //if (typeof inputfile != 'undefined')
-      console.log(inputfile);
+
+
+      /* 
+      create hidden input field with base64 encoded image.
+      this is the file which we'll pass on the the server 
+      */
       console.log(options);
+      console.log(outputname);
       var newinput = document.createElement("input");
       newinput.type = 'hidden';
-      newinput.name = inputfile;
-      newinput.id = 'imagedata';
+      newinput.name = "imagedata" + outputname;
+      newinput.id = 'imagedata' + outputname;
       newinput.value = target.src;
       insertAfter(target, newinput);
+
+      /*
+      Add a button where users can delete uploaded image.
+      Actual removal of image takes place in mainfile javascript.
+      */
+
+      var deleteButton = document.createElement("a");
+      deleteButton.id = outputname;
+      deleteButton.className = "del-image-input";
+      deleteButton.href = "#";
+      deleteButton.innerHTML = "Remove Image";
+
+      var imageDiv = document.createElement("div");
+      imageDiv.id = outputname;
+      imageDiv.className = "imagename";
+      console.log(imagename);
+      imageDiv.innerHTML = imagename;
+
+      insertAfter(target, deleteButton);
+
+      insertAfter(target, imageDiv);
+
+
+
+
 
     } else if (tagName === 'canvas') {
       renderImageToCanvas(this.srcImage, target, opt, doSquash);
