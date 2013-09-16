@@ -35,6 +35,14 @@ class Submission(db.Expando):
 	image = db.BlobProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
 
+class FormComponents(db.Model):
+	form_id = db.IntegerProperty(required = True)
+	component_type = db.StringProperty(required = True)
+	input_type = db.StringProperty()
+	caption = db.StringProperty()
+	options = db.StringProperty()
+	form_order = db.IntegerProperty(required = True)
+
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -50,6 +58,18 @@ class MainHandler(webapp2.RequestHandler):
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
+class TestHandler(MainHandler):
+	def get(self):
+		newform = FormComponents()
+		newform.form_id = "1"
+		newform.component_type = "input_field"
+		newform.input_type = "text"
+		newform.caption = "What is your name?"
+		newform.form_order = 1
+		newform.put()
+
+		
+		self.write(newform.key().id())
 
 class InputHandler(MainHandler):
 	def get(self):
@@ -105,9 +125,7 @@ class ResizeHandler(MainHandler):
 	def get(self):
 		self.render("surveys.html")
 
-class TestHandler(MainHandler):
-	def get(self):
-		self.render("megapix.html")
+
 
 class SubmitExpando(MainHandler):
 	def get(self):
