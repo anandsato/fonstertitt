@@ -20,6 +20,7 @@ from google.appengine.ext import db
 from google.appengine.api import images
 import jinja2
 import base64
+import json as simplejson
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape=True)
@@ -36,12 +37,20 @@ class Submission(db.Expando):
 	created = db.DateTimeProperty(auto_now_add = True)
 
 class FormComponents(db.Model):
-	form_id = db.IntegerProperty(required = True)
-	component_type = db.StringProperty(required = True)
+	form_id = db.IntegerProperty()
+	component_type = db.StringProperty()
 	input_type = db.StringProperty()
 	caption = db.StringProperty()
 	options = db.StringProperty()
-	form_order = db.IntegerProperty(required = True)
+	form_order = db.IntegerProperty()
+
+def gql_json_parser(query_obj):
+    all_components = []
+    for e in query_obj:
+    	form_components = {"name": str(e.key().id()), "id": str(e.key().id()), "type": e.input_type, "caption": e.caption}
+    	all_components.append(form_components)
+    return all_components
+
 
 
 
@@ -61,7 +70,7 @@ class MainHandler(webapp2.RequestHandler):
 class TestHandler(MainHandler):
 	def get(self):
 		newform = FormComponents()
-		newform.form_id = "1"
+		newform.form_id = 1
 		newform.component_type = "input_field"
 		newform.input_type = "text"
 		newform.caption = "What is your name?"
@@ -70,6 +79,27 @@ class TestHandler(MainHandler):
 
 		
 		self.write(newform.key().id())
+
+class FormHandler(MainHandler):
+	def get(self):
+		query_data = FormComponents.all()
+		json_query_data = gql_json_parser(query_data)
+		result = {'action': 'index.html', 'method': 'post', 'html': json_query_data}
+		self.response.headers['Content-Type'] = 'application/json'
+		self.response.out.write(simplejson.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
+
+		"""
+		fc = FormComponents.all()
+		all_components = []
+		for e in fc:
+			form_component = {type": e.input_type, "html": e.caption}
+			all_components.append(form_component)
+		response = json.dumps(, sort_keys=True, indent=4, separators=(',', ': '))
+
+		self.response.headers['Content-Type'] = 'application/json' 
+		self.write(response)"""
+
+
 
 class InputHandler(MainHandler):
 	def get(self):
@@ -137,7 +167,9 @@ class SubmitExpando(MainHandler):
 			output.append(result)
 		self.write(output)
 
-
+class DformHandler(MainHandler):
+	def get(self):
+		self.render("testar-dform.html")
 
 
 	def post(self):
@@ -203,5 +235,7 @@ app = webapp2.WSGIApplication([
     ('/pic', SubmitExpando),
     ('/image', ImageHandler),
     ('/resize', ResizeHandler),
-    ('/test', TestHandler)
+    ('/getform', FormHandler),
+    ('/test', TestHandler),
+    ('/dform', DformHandler)
 ], debug=True)
