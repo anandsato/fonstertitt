@@ -21,6 +21,7 @@ from google.appengine.api import images
 import jinja2
 import base64
 import json as simplejson
+import logging
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape=True)
@@ -157,6 +158,30 @@ class ResizeHandler(MainHandler):
 
 
 
+
+
+class DformHandler(MainHandler):
+	def get(self):
+		self.render("testar-dform.html")
+
+class BuilderHandler(MainHandler):
+	def get(self):
+		self.render("formbuilder.html")
+
+	def post(self):
+		frmb = self.request.arguments()
+		self.write(frmb)
+		logging.error(frmb)
+
+		"""
+		variable_list = self.request.
+		output = []
+		for e in variable_list:
+			query = self.request.get(e)
+			result = (e,query)
+			output.append(result)
+		self.write(output)"""
+
 class SubmitExpando(MainHandler):
 	def get(self):
 		variable_list = self.request.arguments()
@@ -166,11 +191,6 @@ class SubmitExpando(MainHandler):
 			result = (e,query)
 			output.append(result)
 		self.write(output)
-
-class DformHandler(MainHandler):
-	def get(self):
-		self.render("testar-dform.html")
-
 
 	def post(self):
 		variable_list = self.request.arguments()
@@ -237,5 +257,6 @@ app = webapp2.WSGIApplication([
     ('/resize', ResizeHandler),
     ('/getform', FormHandler),
     ('/test', TestHandler),
+    ('/formbuilder', BuilderHandler),
     ('/dform', DformHandler)
 ], debug=True)
