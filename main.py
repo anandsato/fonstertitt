@@ -20,8 +20,9 @@ from google.appengine.ext import db
 from google.appengine.api import images
 import jinja2
 import base64
-import json as simplejson
+import json
 import logging
+import urllib
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape=True)
@@ -36,6 +37,10 @@ class Surveys(db.Model):
 class Submission(db.Expando):
 	image = db.BlobProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
+
+class Forms(db.Model):
+	user_id = db.IntegerProperty()
+
 
 class FormComponents(db.Model):
 	form_id = db.IntegerProperty()
@@ -87,7 +92,7 @@ class FormHandler(MainHandler):
 		json_query_data = gql_json_parser(query_data)
 		result = {'action': 'index.html', 'method': 'post', 'html': json_query_data}
 		self.response.headers['Content-Type'] = 'application/json'
-		self.response.out.write(simplejson.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
+		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
 
 		"""
 		fc = FormComponents.all()
@@ -169,18 +174,42 @@ class BuilderHandler(MainHandler):
 		self.render("formbuilder.html")
 
 	def post(self):
-		frmb = self.request.arguments()
-		self.write(frmb)
-		logging.error(frmb)
+		new_form = Forms()
+		new_form.user_id = 1
+		new_form.put()
 
-		"""
-		variable_list = self.request.
-		output = []
-		for e in variable_list:
-			query = self.request.get(e)
-			result = (e,query)
-			output.append(result)
-		self.write(output)"""
+		form_id = new_form.key().id()
+
+		form_elements = json.loads(urllib.unquote_plus(self.request.body))
+		logging.error('Opened JSON: ')
+		logging.error(form_elements)
+		logging.error(type(form_elements))
+		if isinstance(form_elements, list) and form_elements != []:
+			logging.error("It is a list, and it's not empty")
+			i = 0
+			for elm in form_elements:
+				logging.error(type(elm))
+				i += 1
+				newfc = FormComponents()
+				newfc.component_type = 'input_field'
+				newfc.form_id = form_id
+				newfc.input_type = elm['input_type']
+				newfc.caption = elm['caption']
+
+				newfc.form_order = i
+				if 'options' in elm.keys():
+					newfc.options = json.dumps(elm['options'])
+				logging.error("Option i dict?")
+				logging.error('options' in elm.keys())
+				newfc.put()
+
+
+		#for elm in form_elements
+
+		logging.error(self.request.body)
+		
+		self.write(form_id)
+
 
 class SubmitExpando(MainHandler):
 	def get(self):
