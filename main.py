@@ -40,6 +40,7 @@ class Submission(db.Expando):
 
 class Forms(db.Model):
 	user_id = db.IntegerProperty()
+	name = db.StringProperty()
 
 
 class FormComponents(db.Model):
@@ -54,7 +55,10 @@ def gql_json_parser(query_obj):
     all_components = []
     for e in query_obj:
     	form_components = {"name": str(e.key().id()), "id": str(e.key().id()), "type": e.input_type, "caption": e.caption}
+    	if e.options:
+    		form_components['options'] = json.loads(e.options)
     	all_components.append(form_components)
+    all_components.append({"type": "submit", "value": "Spara checklistan!"})
     return all_components
 
 
@@ -87,23 +91,19 @@ class TestHandler(MainHandler):
 		self.write(newform.key().id())
 
 class FormHandler(MainHandler):
-	def get(self):
-		query_data = FormComponents.all()
+	def get(self,form_id_path=""):
+		if form_id_path:
+			form_id = int(form_id_path)
+			logging.error(form_id)
+			query_data = FormComponents.all().filter('form_id =', form_id).order('form_order')
+		else:
+			form_id = ""
+			logging.error("No form ID")
+			query_data = FormComponents.all()
 		json_query_data = gql_json_parser(query_data)
-		result = {'action': 'index.html', 'method': 'post', 'html': json_query_data}
+		result = {'action': '/pic', 'method': 'post', 'html': json_query_data}
 		self.response.headers['Content-Type'] = 'application/json'
 		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
-
-		"""
-		fc = FormComponents.all()
-		all_components = []
-		for e in fc:
-			form_component = {type": e.input_type, "html": e.caption}
-			all_components.append(form_component)
-		response = json.dumps(, sort_keys=True, indent=4, separators=(',', ': '))
-
-		self.response.headers['Content-Type'] = 'application/json' 
-		self.write(response)"""
 
 
 
@@ -166,8 +166,15 @@ class ResizeHandler(MainHandler):
 
 
 class DformHandler(MainHandler):
-	def get(self):
-		self.render("testar-dform.html")
+	def get(self, form_id_path=""):
+		if form_id_path:
+			form_id = int(form_id_path)
+			logging.error(form_id)
+		else:
+			form_id = ""
+			logging.error("No form ID")
+
+		self.render("testar-dform.html", form_id = form_id)
 
 class BuilderHandler(MainHandler):
 	def get(self):
@@ -193,7 +200,13 @@ class BuilderHandler(MainHandler):
 				newfc = FormComponents()
 				newfc.component_type = 'input_field'
 				newfc.form_id = form_id
-				newfc.input_type = elm['input_type']
+				if elm['input_type'] == 'input_text':
+					newfc.input_type = 'text'
+				if elm['input_type'] == 'radio':
+					newfc.input_type = 'radiobuttons'
+				newfc.caption = elm['caption']
+				if elm['input_type'] == 'file':
+					newfc.input_type = 'file'
 				newfc.caption = elm['caption']
 
 				newfc.form_order = i
@@ -284,8 +297,10 @@ app = webapp2.WSGIApplication([
     ('/pic', SubmitExpando),
     ('/image', ImageHandler),
     ('/resize', ResizeHandler),
-    ('/getform', FormHandler),
+    ('/getform/?', FormHandler),
+    ('/getform/([0-9]+)', FormHandler),
     ('/test', TestHandler),
     ('/formbuilder', BuilderHandler),
-    ('/dform', DformHandler)
+    ('/dform/?', DformHandler),
+    ('/dform/([0-9]+)', DformHandler)
 ], debug=True)
