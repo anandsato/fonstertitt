@@ -57,7 +57,10 @@ def gql_json_parser(query_obj):
     	form_components = {"name": str(e.key().id()), "id": str(e.key().id()), "type": e.input_type, "caption": e.caption}
     	if e.options:
     		form_components['options'] = json.loads(e.options)
+    	if e.input_type == 'file':
+    		form_components['class'] = 'image_file'
     	all_components.append(form_components)
+    all_components.append({"type": "reset", "value": "Aterstall checklistan"})
     all_components.append({"type": "submit", "value": "Spara checklistan!"})
     return all_components
 
@@ -158,8 +161,14 @@ class ImageHandler(MainHandler):
             self.error(404)
 
 class ResizeHandler(MainHandler):
-	def get(self):
-		self.render("surveys.html")
+	def get(self, form_id_path=""):
+		if form_id_path:
+			form_id = int(form_id_path)
+			logging.error(form_id)
+		else:
+			form_id = ""
+			logging.error("No form ID")
+		self.render("mainfile.html", form_id = form_id)
 
 
 
@@ -292,7 +301,8 @@ class SubmitExpando(MainHandler):
 
 
 app = webapp2.WSGIApplication([
-    ('/', ResizeHandler),
+    ('/?', ResizeHandler),
+    ('/([0-9]+)', ResizeHandler),
     ('/submissions', InputHandler),
     ('/pic', SubmitExpando),
     ('/image', ImageHandler),
