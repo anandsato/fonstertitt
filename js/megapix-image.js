@@ -267,13 +267,12 @@ function insertAfter(referenceNode, newNode) {
       deleteButton.innerHTML = "Remove Image";
 
       var imageDiv = document.createElement("div");
-      imageDiv.id = outputname;
+      imageDiv.id = "imagename" +outputname;
       imageDiv.className = "imagename";
       console.log(imagename);
       imageDiv.innerHTML = imagename;
 
       insertAfter(target, deleteButton);
-
       insertAfter(target, imageDiv);
 
 

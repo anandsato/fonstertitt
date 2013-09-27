@@ -34,9 +34,14 @@ class Surveys(db.Model):
 	image = db.BlobProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
 
-class Submission(db.Expando):
+class Submissions(db.Expando):
 	image = db.BlobProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
+
+	@classmethod
+	def get_by_id(cls,sub_id):
+		return Submissions.get_by_id(sub_id)
+
 
 class Forms(db.Model):
 	user_id = db.IntegerProperty()
@@ -51,6 +56,10 @@ class FormComponents(db.Model):
 	options = db.StringProperty()
 	form_order = db.IntegerProperty()
 
+	@classmethod
+	def get_by_form_id(cls,form_id):
+		return FormComponents.all().filter('form_id =', form_id).order('form_order')
+
 def gql_json_parser(query_obj):
     all_components = []
     for e in query_obj:
@@ -64,7 +73,34 @@ def gql_json_parser(query_obj):
     all_components.append({"type": "submit", "value": "Spara checklistan!"})
     return all_components
 
+def generate_frmb_json(query_obj):
+    all_components = []
+    for e in query_obj:
+        form_components = {"required": "undefined", "id": str(e.key().id())} #, 
+        if e.input_type == 'radiobuttons':
+        	form_components['title'] = e.caption
+        	form_components['cssClass'] = "radio"
+        	#transforming the dictionary to something jQuery Formbuilder can understand
+    		d = json.loads(e.options)
+    		logging.error(d)
+    		values = {}
+    		i = 1
+    		for k,v in d.items():
+    			i += 1
+    			values[i] = {"value": v, "baseline": "false"}
+    		form_components['values'] = values
+    		logging.error(values)
+    	if e.input_type == 'text':
+    		form_components['cssClass'] = "input_text"
+    		form_components['values'] = e.caption
+    	if e.input_type == 'file':
+    		form_components['cssClass'] = "file"
+    		form_components['values'] = e.caption
+    	
 
+
+    	all_components.append(form_components)
+    return all_components
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -98,23 +134,62 @@ class FormHandler(MainHandler):
 		if form_id_path:
 			form_id = int(form_id_path)
 			logging.error(form_id)
-			query_data = FormComponents.all().filter('form_id =', form_id).order('form_order')
+			query_data = FormComponents.get_by_form_id(form_id)
 		else:
 			form_id = ""
 			logging.error("No form ID")
-			query_data = FormComponents.all()
+			query_data = FormComponents.all().order('form_order')
 		json_query_data = gql_json_parser(query_data)
 		result = {'action': '/pic', 'method': 'post', 'html': json_query_data}
 		self.response.headers['Content-Type'] = 'application/json'
 		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
 
+class LoadFormHandler(MainHandler):
+	def get(self,form_id_path=""):
+		if form_id_path:
+			form_id = int(form_id_path)
+			logging.error(form_id)
+			query_data = FormComponents.get_by_form_id(form_id)
 
+		else:
+			form_id = ""
+			logging.error("No form ID")
+			query_data = FormComponents.all().order('form_order')
+		result = generate_frmb_json(query_data)
+		output = {}
+		output['form_id'] = form_id
+		output['form_structure'] = result
+		self.response.headers['Content-Type'] = 'application/json'
+		self.response.out.write(json.dumps(output, sort_keys=True, indent=4, separators=(',', ': ')))
 
-class InputHandler(MainHandler):
-	def get(self):
-		surveys = Surveys.all()
-		surveys = list(surveys)
-		self.render('front.html', surveys = surveys)
+class SubmissionsHandler(MainHandler):
+	def get(self,form_id_path=""):
+		if form_id_path:
+			form_id = int(form_id_path)
+			logging.error(form_id)
+			submitted_entries = Submissions.all()
+			submitted_entries = list(submitted_entries)
+			query_data = FormComponents.all()
+			query_data = list(query_data)
+			
+			headers = [e.caption for e in query_data]
+			question_ids = [ e.key().id() for e in query_data]
+			se = [ s.key().id() for s in submitted_entries]
+			output = []
+			for e in submitted_entries:
+				result = []
+				for q in question_ids:
+					try:
+						result.append(getattr(e, str(q)))
+					except AttributeError:
+						result.append("---")
+				output.append(result)
+			#self.write(str(headers) + "\n" + str(output))
+			self.render("front.html", output = output, headers = headers)
+		else:
+			form_id = ""
+			logging.error("No form ID")
+			query_data = FormComponents.all().order('form_order')
 
 
 	def post(self):
@@ -153,7 +228,7 @@ class PictureTester(MainHandler):
 
 class ImageHandler(MainHandler):
     def get(self):
-        greeting = Submission.get_by_id(int(self.request.get('id')))
+        greeting = Submissions.get_by_id(int(self.request.get('id')))
         if greeting.imagefile1:
         	self.response.headers['Content-Type'] = 'image/jpeg'
         	self.response.out.write(greeting.imagefile1)
@@ -251,7 +326,7 @@ class SubmitExpando(MainHandler):
 				query = self.request.get(e)
 				result = (e,query)
 				output.append(result)
-			se = Submission()
+			se = Submissions()
 			imagelist = ['imagedata1','imagedata2','imagedata3','imagedata4','imagedata5']
 			for o in output:
 				if o[0] in imagelist:
@@ -292,7 +367,9 @@ class SubmitExpando(MainHandler):
 			self.write(se.key().id())
 
 
-
+class DrawHandler(MainHandler):
+	def get(self):
+		self.render("drawingboard.html")
         
 
 
@@ -303,14 +380,18 @@ class SubmitExpando(MainHandler):
 app = webapp2.WSGIApplication([
     ('/?', ResizeHandler),
     ('/([0-9]+)', ResizeHandler),
-    ('/submissions', InputHandler),
+    ('/submissions', SubmissionsHandler),
+    ('/submissions/([0-9]+)', SubmissionsHandler),
     ('/pic', SubmitExpando),
     ('/image', ImageHandler),
     ('/resize', ResizeHandler),
     ('/getform/?', FormHandler),
     ('/getform/([0-9]+)', FormHandler),
+    ('/loadform', LoadFormHandler),
+    ('/loadform/([0-9]+)', LoadFormHandler),
     ('/test', TestHandler),
     ('/formbuilder', BuilderHandler),
     ('/dform/?', DformHandler),
-    ('/dform/([0-9]+)', DformHandler)
+    ('/dform/([0-9]+)', DformHandler),
+    ('/draw', DrawHandler)
 ], debug=True)

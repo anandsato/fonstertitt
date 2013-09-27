@@ -1,4 +1,6 @@
 
+
+/*
 function resizeImage(inputfile, outputcontainer, outputname) {
     document.getElementById(inputfile).onchange = function(e) {
         var file = e.target.files[0]
@@ -24,6 +26,7 @@ function resizeImage(inputfile, outputcontainer, outputname) {
 
 }
 
+
 window.onload = function() {
     resizeImage('fileinput1','outputImage1','1');
     resizeImage('fileinput2','outputImage2','2');
@@ -31,7 +34,7 @@ window.onload = function() {
     resizeImage('fileinput4','outputImage4','4');
     resizeImage('fileinput5','outputImage5','5');
 
-    /*
+    
     document.getElementById('fileinput5').onchange = function(e) {
         var file = e.target.files[0]
         var orientation;
@@ -49,8 +52,8 @@ window.onload = function() {
 
         });
     }; 
-    */
+    
   
 };
 
-
+*/

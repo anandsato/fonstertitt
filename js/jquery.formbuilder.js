@@ -102,6 +102,7 @@
 					var values = '';
 					var options = false;
 					// Parse json
+					console.log(json);
 					$(json).each(function () {
 						// checkbox type
 						if (this.cssClass === 'checkbox') {
@@ -115,6 +116,7 @@
 						else if (this.cssClass === 'radio') {
 							options = [this.title];
 							values = [];
+
 							$.each(this.values, function () {
 								values.push([this.value, this.baseline]);
 							});
@@ -130,13 +132,15 @@
 						else {
 							values = [this.values];
 						}
-						appendNewField(this.cssClass, values, options, this.required);
+						console.log(options);
+						appendNewField(this.cssClass, values, options, this.required, this.id);
 					});
 				};
 			// Wrapper for adding a new field
-			var appendNewField = function (type, values, options, required) {
+			var appendNewField = function (type, values, options, required, field_id) {
 					field = '';
 					field_type = type;
+					console.log(field_id);
 					if (typeof (values) === 'undefined') {
 						values = '';
 					}
@@ -233,6 +237,7 @@
 				};
 			// adds a radio element
 			var appendRadioGroup = function (values, options, required) {
+					console.log(options);
 					var title = '';
 					if (typeof (options) === 'object') {
 						title = options[0];
