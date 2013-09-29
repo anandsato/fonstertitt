@@ -14,3 +14,8 @@ indexes:
   properties:
   - name: form_id
   - name: form_order
+
+- kind: Submissions
+  properties:
+  - name: form_id
+  - name: created

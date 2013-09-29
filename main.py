@@ -35,17 +35,15 @@ class Surveys(db.Model):
 	created = db.DateTimeProperty(auto_now_add = True)
 
 class Submissions(db.Expando):
+	form_id = db.IntegerProperty()
 	image = db.BlobProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
-
-	@classmethod
-	def get_by_id(cls,sub_id):
-		return Submissions.get_by_id(sub_id)
 
 
 class Forms(db.Model):
 	user_id = db.IntegerProperty()
 	name = db.StringProperty()
+	created = db.DateTimeProperty(auto_now_add = True)
 
 
 class FormComponents(db.Model):
@@ -60,7 +58,7 @@ class FormComponents(db.Model):
 	def get_by_form_id(cls,form_id):
 		return FormComponents.all().filter('form_id =', form_id).order('form_order')
 
-def gql_json_parser(query_obj):
+def gql_json_parser(query_obj, form_id):
     all_components = []
     for e in query_obj:
     	form_components = {"name": str(e.key().id()), "id": str(e.key().id()), "type": e.input_type, "caption": e.caption}
@@ -69,6 +67,7 @@ def gql_json_parser(query_obj):
     	if e.input_type == 'file':
     		form_components['class'] = 'image_file'
     	all_components.append(form_components)
+    all_components.append({"type": "hidden","name": "form_id", "value": str(form_id)})
     all_components.append({"type": "reset", "value": "Aterstall checklistan"})
     all_components.append({"type": "submit", "value": "Spara checklistan!"})
     return all_components
@@ -139,7 +138,7 @@ class FormHandler(MainHandler):
 			form_id = ""
 			logging.error("No form ID")
 			query_data = FormComponents.all().order('form_order')
-		json_query_data = gql_json_parser(query_data)
+		json_query_data = gql_json_parser(query_data, form_id)
 		result = {'action': '/pic', 'method': 'post', 'html': json_query_data}
 		self.response.headers['Content-Type'] = 'application/json'
 		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
@@ -167,11 +166,12 @@ class SubmissionsHandler(MainHandler):
 		if form_id_path:
 			form_id = int(form_id_path)
 			logging.error(form_id)
-			submitted_entries = Submissions.all()
-			submitted_entries = list(submitted_entries)
-			query_data = FormComponents.all()
-			query_data = list(query_data)
-			
+			submitted_entries = Submissions.all().filter('form_id =', form_id).order('created')
+			if submitted_entries:
+				submitted_entries = list(submitted_entries)
+			query_data = FormComponents.get_by_form_id(form_id)
+			if query_data:
+				query_data = list(query_data)
 			headers = [e.caption for e in query_data]
 			question_ids = [ e.key().id() for e in query_data]
 			se = [ s.key().id() for s in submitted_entries]
@@ -189,42 +189,8 @@ class SubmissionsHandler(MainHandler):
 		else:
 			form_id = ""
 			logging.error("No form ID")
+			self.write("No form ID")
 			query_data = FormComponents.all().order('form_order')
-
-
-	def post(self):
-		name = self.request.get('name')
-		text = self.request.get('text')
-		
-		if name and text:
-			s = Surveys(name = name, text = text)
-			s.put()
-			self.response.write('true')
-
-
-class PictureTester(MainHandler):
-	def get(self):
-
-		self.render("upload.html")
-
-	def post(self):
-		firstname = self.request.get('firstname')
-		lastname = self.request.get('lastname')
-		image = self.request.get('file')
-		image = image.split(',')[1]
-		image = str(image)
-		image = base64.b64decode(image)
-		
-		if firstname and lastname:
-			self.write(firstname + lastname)
-			
-			s = Surveys(name = firstname, text = lastname)
-			s.image = db.Blob(image)
-			s.put()
-			#id = s.key().id()
-			self.write("true")
-		else:
-			self.write("no submission")
 
 class ImageHandler(MainHandler):
     def get(self):
@@ -235,7 +201,7 @@ class ImageHandler(MainHandler):
         else:
             self.error(404)
 
-class ResizeHandler(MainHandler):
+class FrontHandler(MainHandler):
 	def get(self, form_id_path=""):
 		if form_id_path:
 			form_id = int(form_id_path)
@@ -261,27 +227,50 @@ class DformHandler(MainHandler):
 		self.render("testar-dform.html", form_id = form_id)
 
 class BuilderHandler(MainHandler):
-	def get(self):
-		self.render("formbuilder.html")
+	def get(self, form_id_path=""):
+		if form_id_path:
+			form_id = int(form_id_path)
+			logging.error(form_id)
+		else:
+			form_id = ""
+			logging.error("No form ID")
+			#self.write("No form with that ID number")
+		self.render("formbuilder.html", form_id = form_id)
+
 
 	def post(self):
-		new_form = Forms()
-		new_form.user_id = 1
-		new_form.put()
-
-		form_id = new_form.key().id()
-
-		form_elements = json.loads(urllib.unquote_plus(self.request.body))
-		logging.error('Opened JSON: ')
-		logging.error(form_elements)
-		logging.error(type(form_elements))
+		log = logging.error
+		form_data = json.loads(urllib.unquote_plus(self.request.body))
+		
+		if form_data["form_id"] and form_data["form_id"].isdigit():
+			log("yay we have an ID")
+			form = Forms.get_by_id(int(form_data["form_id"]))
+			if form:
+				form_id = int(form_data["form_id"])
+			else:
+				self.write("No such ID in DB")
+		else:
+			log("we have to get a new form ID")
+			new_form = Forms()
+			new_form.user_id = 1
+			new_form.put()
+			form_id = new_form.key().id()
+		log(str(form_id))
+		form_elements = form_data['html']
 		if isinstance(form_elements, list) and form_elements != []:
 			logging.error("It is a list, and it's not empty")
 			i = 0
 			for elm in form_elements:
-				logging.error(type(elm))
+				if elm['id'] == "undefined":
+					log("ID is undef")
+					newfc = FormComponents()
+				elif elm['id'].isdigit():
+					log("This element has an ID: " + elm['id'])
+					newfc = FormComponents.get_by_id(int(elm['id']))
+					if not newfc:
+						log("not in DB. create new Form Compontent entity")
+						newfc = FormComponents()
 				i += 1
-				newfc = FormComponents()
 				newfc.component_type = 'input_field'
 				newfc.form_id = form_id
 				if elm['input_type'] == 'input_text':
@@ -292,20 +281,16 @@ class BuilderHandler(MainHandler):
 				if elm['input_type'] == 'file':
 					newfc.input_type = 'file'
 				newfc.caption = elm['caption']
-
 				newfc.form_order = i
 				if 'options' in elm.keys():
 					newfc.options = json.dumps(elm['options'])
-				logging.error("Option i dict?")
-				logging.error('options' in elm.keys())
 				newfc.put()
-
-
-		#for elm in form_elements
-
-		logging.error(self.request.body)
-		
 		self.write(form_id)
+
+class OverviewHandler(MainHandler):
+	def get(self):
+		forms = Forms.all()
+		self.render("forms.html", forms = forms)
 
 
 class SubmitExpando(MainHandler):
@@ -331,38 +316,20 @@ class SubmitExpando(MainHandler):
 			for o in output:
 				if o[0] in imagelist:
 					continue
+				if o[0] == "form_id":
+					logging.error("Form ID is: " + o[1])
+					se.form_id = int(o[1])
+					continue
+				if o[0][:9] == "imagedata":
+					logging.error("image file: " + str(o[1]))
+					imagefile = o[1]
+					imagefile = imagefile.split(',')[1]
+					imagefile = str(imagefile)
+					imagefile = base64.b64decode(imagefile)
+					a = "image"
+					se.file[a] = db.Blob(imagefile)
+					continue
 				setattr(se,o[0],o[1])
-			image1 = self.request.get('imagedata1')
-			image2 = self.request.get('imagedata2')
-			image3 = self.request.get('imagedata3')
-			image4 = self.request.get('imagedata4')
-			image5 = self.request.get('imagedata5')
-
-			if image1:
-				image1 = image1.split(',')[1]
-				image1 = str(image1)
-				image1 = base64.b64decode(image1)
-				se.imagefile1 = db.Blob(image1)
-			if image2:
-				image2 = image2.split(',')[1]
-				image2 = str(image2)
-				image2 = base64.b64decode(image2)
-				se.imagefile2 = db.Blob(image2)
-			if image3:
-				image3 = image3.split(',')[1]
-				image3 = str(image3)
-				image3 = base64.b64decode(image3)
-				se.imagefile3 = db.Blob(image3)
-			if image4:
-				image4 = image4.split(',')[1]
-				image4 = str(image4)
-				image4 = base64.b64decode(image4)
-				se.imagefile4 = db.Blob(image4)
-			if image5:
-				image5 = image5.split(',')[1]
-				image5 = str(image5)
-				image5 = base64.b64decode(image5)
-				se.imagefile5 = db.Blob(image5)
 			se.put()
 			self.write(se.key().id())
 
@@ -378,20 +345,22 @@ class DrawHandler(MainHandler):
 
 
 app = webapp2.WSGIApplication([
-    ('/?', ResizeHandler),
-    ('/([0-9]+)', ResizeHandler),
+    ('/?', FrontHandler),
+    ('/([0-9]+)', FrontHandler),
     ('/submissions', SubmissionsHandler),
     ('/submissions/([0-9]+)', SubmissionsHandler),
     ('/pic', SubmitExpando),
     ('/image', ImageHandler),
-    ('/resize', ResizeHandler),
     ('/getform/?', FormHandler),
     ('/getform/([0-9]+)', FormHandler),
-    ('/loadform', LoadFormHandler),
+    ('/loadform/?', LoadFormHandler),
     ('/loadform/([0-9]+)', LoadFormHandler),
     ('/test', TestHandler),
     ('/formbuilder', BuilderHandler),
+    ('/formbuilder/([0-9]+)', BuilderHandler),
     ('/dform/?', DformHandler),
     ('/dform/([0-9]+)', DformHandler),
-    ('/draw', DrawHandler)
+    ('/draw', DrawHandler),
+    ('/forms', OverviewHandler)
+
 ], debug=True)

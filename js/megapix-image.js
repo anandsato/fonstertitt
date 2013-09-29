@@ -256,8 +256,8 @@ function insertAfter(referenceNode, newNode) {
       insertAfter(target, newinput);
 
       /*
-      Add a button where users can delete uploaded image.
-      Actual removal of image takes place in mainfile javascript.
+       * Add a button where users can delete uploaded image.
+       * Actual removal of image takes place in mainfile javascript.
       */
 
       var deleteButton = document.createElement("a");

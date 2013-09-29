@@ -10,6 +10,7 @@
 	$.fn.formbuilder = function (options) {
 		// Extend the configuration options with user-provided
 		var defaults = {
+			main_form_id: false,
 			save_url: false,
 			load_url: false,
 			control_box_target: false,
@@ -54,6 +55,10 @@
 					form_db_id = json.form_id;
 					fromJson(json.form_structure);
 				});
+			}
+
+			if (opts.main_form_id) {
+				$("#checklist").html(opts.main_form_id);
 			}
 			// Create form control select box and add into the editor
 			var controlBox = function (target) {
@@ -140,25 +145,24 @@
 			var appendNewField = function (type, values, options, required, field_id) {
 					field = '';
 					field_type = type;
-					console.log(field_id);
 					if (typeof (values) === 'undefined') {
 						values = '';
 					}
 					switch (type) {
 					case 'input_text':
-						appendTextInput(values, required);
+						appendTextInput(values, required, field_id);
 						break;
 					case 'textarea':
-						appendTextarea(values, required);
+						appendTextarea(values, required, field_id);
 						break;
 					case 'file':
-						appendFileInput(values, required);
+						appendFileInput(values, required, field_id);
 						break;
 					case 'checkbox':
 						appendCheckboxGroup(values, options, required);
 						break;
 					case 'radio':
-						appendRadioGroup(values, options, required);
+						appendRadioGroup(values, options, required, field_id);
 						break;
 					case 'select':
 						appendSelectList(values, options, required);
@@ -166,26 +170,26 @@
 					}
 				};
 			// single line input type="text"
-			var appendTextInput = function (values, required) {
+			var appendTextInput = function (values, required, field_id) {
 					field += '<label>' + opts.messages.label + '</label>';
-					field += '<input class="fld-title" id="title-' + last_id + '" type="text" value="' + values + '" />';
+					field += '<input name="' + field_id + '" class="fld-title" id="title-' + last_id + '" type="text" value="' + values + '" />';
 					help = '';
-					appendFieldLi(opts.messages.text, field, required, help);
+					appendFieldLi(opts.messages.text, field, required, help, field_id);
 				};
 			// multi-line textarea
-			var appendTextarea = function (values, required) {
+			var appendTextarea = function (values, required, field_id) {
 					field += '<label>' + opts.messages.label + '</label>';
-					field += '<input type="text" value="' + values + '" />';
+					field += '<input name="' + field_id + '" type="text" value="' + values + '" />';
 					help = '';
-					appendFieldLi(opts.messages.paragraph_field, field, required, help);
+					appendFieldLi(opts.messages.paragraph_field, field, required, help, field_id);
 				};
 
 			// fileinput field
-			var appendFileInput = function (values, required) {
+			var appendFileInput = function (values, required, field_id) {
 					field += '<label>' + opts.messages.label + '</label>';
-					field += '<input class="fld-title" id="title-' + last_id + '" type="text" value="' + values + '" />';
+					field += '<input name="' + field_id + '" class="fld-title" id="title-' + last_id + '" type="text" value="' + values + '" />';
 					help = '';
-					appendFieldLi(opts.messages.file_text, field, required, help);
+					appendFieldLi(opts.messages.file_text, field, required, help, field_id);
 				};
 			// adds a checkbox element
 			var appendCheckboxGroup = function (values, options, required) {
@@ -236,15 +240,15 @@
 					return field;
 				};
 			// adds a radio element
-			var appendRadioGroup = function (values, options, required) {
-					console.log(options);
+			var appendRadioGroup = function (values, options, required, field_id) {
 					var title = '';
 					if (typeof (options) === 'object') {
 						title = options[0];
 					}
 					field += '<div class="rd_group">';
 					field += '<div class="frm-fld"><label>' + opts.messages.title + '</label>';
-					field += '<input type="text" name="title" value="' + title + '" /></div>';
+					//adding field_id which we'll save as the FormComponent ID in the database
+					field += '<input type="text" id="' + field_id + '" name="title" value="' + title + '" /></div>';
 					field += '<div class="false-label">' + opts.messages.select_options + '</div>';
 					field += '<div class="fields">';
 
@@ -264,7 +268,7 @@
 					field += '</div>';
 					field += '</div>';
 					help = '';
-					appendFieldLi(opts.messages.radio_group, field, required, help);
+					appendFieldLi(opts.messages.radio_group, field, required, help, field_id);
 
 					$('.'+ opts.css_ol_sortable_class).sortable(); // making the dynamically added option fields sortable. 
 				};
@@ -332,7 +336,7 @@
 					}
 				};
 			// Appends the new field markup to the editor
-			var appendFieldLi = function (title, field_html, required, help) {
+			var appendFieldLi = function (title, field_html, required, help, field_id) {
 					if (required) {
 						required = required === 'checked' ? true : false;
 					}
@@ -344,9 +348,11 @@
 					li += '<strong id="txt-title-' + last_id + '">' + title + '</strong></div>';
 					li += '<div id="frm-' + last_id + '-fld" class="frm-holder">';
 					li += '<div class="frm-elements">';
+					li += '<div class="identifier" id="' + field_id +'">';
 					li += '<div class="frm-fld"><label for="required-' + last_id + '">' + opts.messages.required + '</label>';
 					li += '<input class="required" type="checkbox" value="1" name="required-' + last_id + '" id="required-' + last_id + '"' + (required ? ' checked="checked"' : '') + ' /></div>';
 					li += field;
+					li += '</div>';
 					li += '</div>';
 					li += '</div>';
 					li += '</li>';
@@ -422,12 +428,14 @@
 			// saves the serialized data to the server
 			var save = function () {
 					if (opts.save_url) {
+						var blob = $(ul_obj).serializeFormList({prepend: opts.serialize_prefix});
+						console.log(blob);
 						$.ajax({
 							type: "POST",
 							url: opts.save_url,
 							contentType: "application/json; charset=utf-8",
 							dataType: "json",
-							data: $(ul_obj).serializeFormList({prepend: opts.serialize_prefix}),
+							data: blob,
 							success: function (e) {
 								console.log(e);
 							}
@@ -465,6 +473,7 @@
 			var ul_obj = this;
 			var li_count = 0;
 			var c = 1;
+
 			$(this).children().each(function () {
 				for (att = 0; att < opts.attributes.length; att++) {
 					var key = (opts.attributes[att] === 'class' ? 'input_type' : opts.attributes[att]);
@@ -480,14 +489,17 @@
 						case 'input_text':
 							serialStr += opts.prepend + '[' + li_count + '][values]=' + encodeURIComponent($('#' + $(this).attr('id') + ' input[type=text]').val());
 							elementJson['caption'] = $('#' + $(this).attr('id') + ' input[type=text]').val();
+							elementJson['id'] = $('#' + $(this).attr('id') + ' input[type=text]').attr("name");
 							break;
 						case 'textarea':
 							serialStr += opts.prepend + '[' + li_count + '][values]=' + encodeURIComponent($('#' + $(this).attr('id') + ' input[type=text]').val());
 							elementJson['caption'] = $('#' + $(this).attr('id') + ' input[type=text]').val();
+							elementJson['id'] = $('#' + $(this).attr('id') + ' input[type=text]').attr("name");
 							break;
 						case 'file':
 							serialStr += opts.prepend + '[' + li_count + '][values]=' + encodeURIComponent($('#' + $(this).attr('id') + ' input[type=text]').val());
 							elementJson['caption'] = $('#' + $(this).attr('id') + ' input[type=text]').val();
+							elementJson['id'] = $('#' + $(this).attr('id') + ' input[type=text]').attr("name");
 							break;							
 						case 'checkbox':
 							c = 1;
@@ -510,6 +522,8 @@
 								if ($(this).attr('name') === 'title') {
 									serialStr += opts.prepend + '[' + li_count + '][title]=' + encodeURIComponent($(this).val());
 									elementJson['caption'] = $(this).val();
+									elementJson['id'] = $(this).attr('id');
+
 								}
 								else {
 									serialStr += opts.prepend + '[' + li_count + '][values][' + c + '][value]=' + encodeURIComponent($(this).val());
@@ -542,10 +556,10 @@
 				li_count++;
 			});
 		});
-		result = {"method":"post","action":"/test"}
+		var main_form_id = $("#checklist").html();
+		console.log(main_form_id);
+		result = {"form_id": main_form_id}
 		result['html'] = jsonString;
-		console.log(serialStr);
-		console.log(JSON.stringify(result));
-		return (JSON.stringify(jsonString));
+		return (JSON.stringify(result));
 	};
 })(jQuery);
