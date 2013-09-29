@@ -4,18 +4,40 @@
     <title>Checklist-appen</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap -->
+    <script src="//code.jquery.com/jquery.js"></script>
     <link href="/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="/css/theme.css" rel="stylesheet">
+        {% block header %}
+
+        {% endblock %}
   </head>
   <body>
-    <!--<div class="container">-->
+    <div class="container">
+            <div class="navbar navbar-default">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="">Fönstertittaren</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/forms">Startsidan</a></li>
+            <li><a href="/formbuilder">Skapa ny checklista <span class="glyphicon glyphicon-circle-arrow-right"></span></a></li>
+            
+
+          </ul>
+
+        </div><!--/.nav-collapse -->
+      </div>
+
         {% block content %}
 
         {% endblock %}
-
- <!-- </div>-->
+    </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="//code.jquery.com/jquery.js"></script>
+    
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
   </body>

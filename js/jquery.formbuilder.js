@@ -38,8 +38,8 @@
 				hide				: "Hide",
 				required			: "Required",
 				show				: "Show",
-				file 				: "File",
-				file_text 			: "File Input Name"
+				file 				: "Image",
+				file_text 			: "Image Input Name"
 			}
 		};
 		var opts = $.extend(defaults, options);
@@ -438,6 +438,8 @@
 							data: blob,
 							success: function (e) {
 								console.log(e);
+								window.location.href = "/forms";
+
 							}
 						});
 					}

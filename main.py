@@ -53,6 +53,7 @@ class FormComponents(db.Model):
 	caption = db.StringProperty()
 	options = db.StringProperty()
 	form_order = db.IntegerProperty()
+	created = db.DateTimeProperty(auto_now_add = True)
 
 	@classmethod
 	def get_by_form_id(cls,form_id):
