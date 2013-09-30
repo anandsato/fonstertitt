@@ -69,7 +69,6 @@ def gql_json_parser(query_obj, form_id):
     		form_components['class'] = 'image_file'
     	all_components.append(form_components)
     all_components.append({"type": "hidden","name": "form_id", "value": str(form_id)})
-    all_components.append({"type": "reset", "value": "Aterstall checklistan"})
     all_components.append({"type": "submit", "value": "Spara checklistan!"})
     return all_components
 

@@ -76,7 +76,7 @@
 					select += '<option value="radio">' + opts.messages.radio + '</option>';
 					select += '<option value="select">' + opts.messages.select + '</option>';
 					// Build the control box and search button content
-					box_content = '<select id="' + box_id + '" class="frmb-control">' + select + '</select>';
+					box_content = '<select id="' + box_id + '" class="form-control">' + select + '</select>';
 					save_button = '<input type="submit" id="' + save_id + '" class="frmb-submit" value="' + opts.messages.save + '"/>';
 					// Insert the control box into page
 					if (!target) {

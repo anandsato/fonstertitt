@@ -10,7 +10,7 @@
     <!--<script src="http://debug.phonegap.com/target/target-script-min.js#brankelibroffoiu"></script>-->
 </head>
 
-<body>
+<body id="content-body">
 
 <div data-role="page" id="formpage">
     <div data-role="header">
@@ -32,7 +32,7 @@
             <ul>
                 <li><a href="#formpage">Form page</a></li>
                 <li><a href="#submissions-page">Submitted Entries</a></li>
-                <li><a href="/submissions">Submission on server</a></li>
+                <!--<li><a href="/submissions">Submission on server</a></li>-->
             </ul>
         </div><!-- /navbar -->
     </div><!-- /footer -->
@@ -53,7 +53,7 @@
             <ul>
                 <li><a href="#formpage">Form page</a></li>
                 <li><a href="#submissions-page">Submitted Entries</a></li>
-                <li><a href="/submissions">Submission on server</a></li>
+                <!--<li><a href="/submissions">Submission on server</a></li>-->
             </ul>
         </div><!-- /navbar -->
     </div><!-- /footer -->
@@ -69,7 +69,9 @@
         $.get( "/getform/" + url, function( data ) {
             form = data;
             $("#myform").dform(form);
+
             dFormCallbacks();
+            $('#content-body').trigger('create');
         });
         
         function dFormCallbacks(){
@@ -196,6 +198,7 @@ $(document).ready(function(){
         localStorage.removeItem($(this).attr("id"));
         alert("you deleted submission " + $(this).attr("id"));
         reloadSubmissions();
+        $('#content-body').trigger('create');
     });
 
 
