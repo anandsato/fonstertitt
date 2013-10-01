@@ -23,7 +23,7 @@
 				title				: "Title",
 				paragraph			: "Paragraph",
 				checkboxes			: "Checkboxes",
-				radio				: "Radio",
+				radio				: "Radio: Flervalsfrågor",
 				select				: "Select List",
 				text_field			: "Text Field",
 				label				: "Label",
@@ -71,10 +71,10 @@
 					select += '<option value="0">' + opts.messages.add_new_field + '</option>';
 					select += '<option value="input_text">' + opts.messages.text + '</option>';
 					select += '<option value="file">' + opts.messages.file + '</option>';
-					select += '<option value="textarea">' + opts.messages.paragraph + '</option>';
-					select += '<option value="checkbox">' + opts.messages.checkboxes + '</option>';
+					//select += '<option value="textarea">' + opts.messages.paragraph + '</option>';
+					//select += '<option value="checkbox">' + opts.messages.checkboxes + '</option>';
 					select += '<option value="radio">' + opts.messages.radio + '</option>';
-					select += '<option value="select">' + opts.messages.select + '</option>';
+					//select += '<option value="select">' + opts.messages.select + '</option>';
 					// Build the control box and search button content
 					box_content = '<select id="' + box_id + '" class="form-control">' + select + '</select>';
 					save_button = '<input type="submit" id="' + save_id + '" class="frmb-submit" value="' + opts.messages.save + '"/>';

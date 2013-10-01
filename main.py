@@ -28,15 +28,8 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape=True)
 
 
-class Surveys(db.Model):
-	name = db.StringProperty(required = True)
-	text = db.TextProperty(required = True)
-	image = db.BlobProperty()
-	created = db.DateTimeProperty(auto_now_add = True)
-
 class Submissions(db.Expando):
 	form_id = db.IntegerProperty()
-	image = db.BlobProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
 
 
@@ -139,7 +132,7 @@ class FormHandler(MainHandler):
 			logging.error("No form ID")
 			query_data = FormComponents.all().order('form_order')
 		json_query_data = gql_json_parser(query_data, form_id)
-		result = {'action': '/pic', 'method': 'post', 'html': json_query_data}
+		result = {'action': '/submit', 'method': 'post', 'html': json_query_data}
 		self.response.headers['Content-Type'] = 'application/json'
 		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
 
@@ -169,7 +162,7 @@ class SubmissionsHandler(MainHandler):
 			submitted_entries = Submissions.all().filter('form_id =', form_id).order('created')
 			if submitted_entries:
 				submitted_entries = list(submitted_entries)
-			query_data = FormComponents.get_by_form_id(form_id)
+			query_data = FormComponents.all().filter('form_id =', form_id).filter('component_type =','input_field').order('created')
 			if query_data:
 				query_data = list(query_data)
 			headers = [e.caption for e in query_data]
@@ -184,20 +177,21 @@ class SubmissionsHandler(MainHandler):
 					except AttributeError:
 						result.append("---")
 				output.append(result)
-			#self.write(str(headers) + "\n" + str(output))
 			self.render("front.html", output = output, headers = headers)
 		else:
 			form_id = ""
 			logging.error("No form ID")
 			self.write("No form ID")
-			query_data = FormComponents.all().order('form_order')
 
 class ImageHandler(MainHandler):
     def get(self):
-        greeting = Submissions.get_by_id(int(self.request.get('id')))
-        if greeting.imagefile1:
+    	sub_id = int(self.request.get('sub_id'))
+    	elm_id = str(self.request.get('elm_id'))
+        entry = Submissions.get_by_id(sub_id)
+        if entry:
+        	image = getattr(entry, elm_id)
         	self.response.headers['Content-Type'] = 'image/jpeg'
-        	self.response.out.write(greeting.imagefile1)
+        	self.response.out.write(image)
         else:
             self.error(404)
 
@@ -271,15 +265,17 @@ class BuilderHandler(MainHandler):
 						log("not in DB. create new Form Compontent entity")
 						newfc = FormComponents()
 				i += 1
-				newfc.component_type = 'input_field'
 				newfc.form_id = form_id
 				if elm['input_type'] == 'input_text':
 					newfc.input_type = 'text'
+					newfc.component_type = 'input_field'
 				if elm['input_type'] == 'radio':
 					newfc.input_type = 'radiobuttons'
+					newfc.component_type = 'input_field'
 				newfc.caption = elm['caption']
 				if elm['input_type'] == 'file':
 					newfc.input_type = 'file'
+					newfc.component_type = 'image'
 				newfc.caption = elm['caption']
 				newfc.form_order = i
 				if 'options' in elm.keys():
@@ -321,13 +317,11 @@ class SubmitExpando(MainHandler):
 					se.form_id = int(o[1])
 					continue
 				if o[0][:9] == "imagedata":
-					logging.error("image file: " + str(o[1]))
 					imagefile = o[1]
 					imagefile = imagefile.split(',')[1]
 					imagefile = str(imagefile)
 					imagefile = base64.b64decode(imagefile)
-					a = "image"
-					se.file[a] = db.Blob(imagefile)
+					setattr(se,o[0][9:],db.Blob(imagefile))
 					continue
 				setattr(se,o[0],o[1])
 			se.put()
@@ -349,7 +343,7 @@ app = webapp2.WSGIApplication([
     ('/([0-9]+)', FrontHandler),
     ('/submissions', SubmissionsHandler),
     ('/submissions/([0-9]+)', SubmissionsHandler),
-    ('/pic', SubmitExpando),
+    ('/submit', SubmitExpando),
     ('/image', ImageHandler),
     ('/getform/?', FormHandler),
     ('/getform/([0-9]+)', FormHandler),
