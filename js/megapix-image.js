@@ -239,7 +239,9 @@ function insertAfter(referenceNode, newNode) {
 
     var tagName = target.tagName.toLowerCase();
     if (tagName === 'img') {
+      target.style.display='none';
       target.src = renderImageToDataURL(this.srcImage, opt, doSquash);
+
 
 
       /* 
@@ -266,6 +268,15 @@ function insertAfter(referenceNode, newNode) {
       deleteButton.href = "#";
       deleteButton.innerHTML = "Remove Image";
 
+      var paintButton = document.createElement("a");
+      paintButton.id = outputname;
+      paintButton.className = "paint-image-input";
+      paintButton.href = "#dialog";
+      paintButton.setAttribute("data-rel","dialog")
+      paintButton.innerHTML = "Paint on Image";
+      //id='lnkDialog' href="#dialog" data-rel="dialog" 
+
+
       var imageDiv = document.createElement("div");
       imageDiv.id = "imagename" +outputname;
       imageDiv.className = "imagename";
@@ -274,6 +285,8 @@ function insertAfter(referenceNode, newNode) {
 
       insertAfter(target, deleteButton);
       insertAfter(target, imageDiv);
+      insertAfter(target, paintButton);
+
 
 
 

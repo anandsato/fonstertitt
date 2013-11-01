@@ -21,13 +21,13 @@
 				add_new_field		: "Add New Field...",
 				text				: "Text Field",
 				title				: "Title",
-				paragraph			: "Paragraph",
+				paragraph			: "Textarea",
 				checkboxes			: "Checkboxes",
 				radio				: "Radio: Flervalsfrågor",
 				select				: "Select List",
 				text_field			: "Text Field",
 				label				: "Label",
-				paragraph_field		: "Paragraph Field",
+				paragraph_field		: "Textarea",
 				select_options		: "Select Options",
 				add					: "Add",
 				checkbox_group		: "Checkbox Group",
@@ -39,7 +39,9 @@
 				required			: "Required",
 				show				: "Show",
 				file 				: "Image",
-				file_text 			: "Image Input Name"
+				file_text 			: "Image Input Name",
+				headline			: "Rubrik - H2"
+
 			}
 		};
 		var opts = $.extend(defaults, options);
@@ -47,6 +49,7 @@
 		return this.each(function () {
 			var ul_obj = $(this).append('<ul id="' + frmb_id + '" class="frmb"></ul>').find('ul');
 			var field = '', field_type = '', last_id = 1, help, form_db_id;
+			var FormName;
 			// Add a unique class to the current element
 			$(ul_obj).addClass(frmb_id);
 			// load existing form data
@@ -54,12 +57,20 @@
 				$.getJSON(opts.load_url, function(json) {
 					form_db_id = json.form_id;
 					fromJson(json.form_structure);
+					FormName = json.form_name;
+					$("#chk-list-name").val( FormName );
 				});
 			}
 
 			if (opts.main_form_id) {
 				$("#checklist").html(opts.main_form_id);
 			}
+
+			
+
+			//console.log(FormName);
+
+
 			// Create form control select box and add into the editor
 			var controlBox = function (target) {
 					var select = '';
@@ -71,7 +82,8 @@
 					select += '<option value="0">' + opts.messages.add_new_field + '</option>';
 					select += '<option value="input_text">' + opts.messages.text + '</option>';
 					select += '<option value="file">' + opts.messages.file + '</option>';
-					//select += '<option value="textarea">' + opts.messages.paragraph + '</option>';
+					select += '<option value="textarea">' + opts.messages.paragraph + '</option>';
+					select += '<option value="headline">' + opts.messages.headline + '</option>';
 					//select += '<option value="checkbox">' + opts.messages.checkboxes + '</option>';
 					select += '<option value="radio">' + opts.messages.radio + '</option>';
 					//select += '<option value="select">' + opts.messages.select + '</option>';
@@ -137,7 +149,7 @@
 						else {
 							values = [this.values];
 						}
-						console.log(options);
+
 						appendNewField(this.cssClass, values, options, this.required, this.id);
 					});
 				};
@@ -154,6 +166,9 @@
 						break;
 					case 'textarea':
 						appendTextarea(values, required, field_id);
+						break;
+					case 'headline':
+						appendHeadline(values, required, field_id);
 						break;
 					case 'file':
 						appendFileInput(values, required, field_id);
@@ -182,6 +197,14 @@
 					field += '<input name="' + field_id + '" type="text" value="' + values + '" />';
 					help = '';
 					appendFieldLi(opts.messages.paragraph_field, field, required, help, field_id);
+				};
+
+			// headline <h2>
+			var appendHeadline = function (values, required, field_id) {
+					field += '<label>' + opts.messages.label + '</label>';
+					field += '<input name="' + field_id + '" type="text" value="' + values + '" />';
+					help = '';
+					appendFieldLi(opts.messages.headline, field, required, help, field_id);
 				};
 
 			// fileinput field
@@ -438,12 +461,12 @@
 							data: blob,
 							success: function (e) {
 								console.log(e);
-								window.location.href = "/forms";
+								//window.location.href = "/forms";
 
 							}
 						});
 					}
-				};
+			};
 		});
 	};
 })(jQuery);
@@ -502,6 +525,11 @@
 							serialStr += opts.prepend + '[' + li_count + '][values]=' + encodeURIComponent($('#' + $(this).attr('id') + ' input[type=text]').val());
 							elementJson['caption'] = $('#' + $(this).attr('id') + ' input[type=text]').val();
 							elementJson['id'] = $('#' + $(this).attr('id') + ' input[type=text]').attr("name");
+							break;
+						case 'headline':
+							serialStr += opts.prepend + '[' + li_count + '][values]=' + encodeURIComponent($('#' + $(this).attr('id') + ' input[type=text]').val());
+							elementJson['caption'] = $('#' + $(this).attr('id') + ' input[type=text]').val();
+							elementJson['id'] = $('#' + $(this).attr('id') + ' input[type=text]').attr("name");
 							break;							
 						case 'checkbox':
 							c = 1;
@@ -519,7 +547,7 @@
 							break;
 						case 'radio':
 							c = 1;
-							var inputOptions = {};
+							var inputOptions = new Array();
 							$('#' + $(this).attr('id') + ' input[type=text]').each(function () {
 								if ($(this).attr('name') === 'title') {
 									serialStr += opts.prepend + '[' + li_count + '][title]=' + encodeURIComponent($(this).val());
@@ -529,7 +557,7 @@
 								}
 								else {
 									serialStr += opts.prepend + '[' + li_count + '][values][' + c + '][value]=' + encodeURIComponent($(this).val());
-									inputOptions[$(this).val().toLowerCase()] = $(this).val();
+									inputOptions.push($(this).val());
 									serialStr += opts.prepend + '[' + li_count + '][values][' + c + '][baseline]=' + $(this).prev().is(':checked');
 								}
 								c++;
@@ -558,9 +586,12 @@
 				li_count++;
 			});
 		});
-		var main_form_id = $("#checklist").html();
-		console.log(main_form_id);
-		result = {"form_id": main_form_id}
+		var MainFormId = $("#checklist").html();
+		var MainFormName = $("#checklist-name > input").val();
+		console.log(MainFormId);
+		console.log(MainFormName);
+		console.log(jsonString);
+		result = {"form_id": MainFormId, "name": MainFormName};
 		result['html'] = jsonString;
 		return (JSON.stringify(result));
 	};

@@ -30,11 +30,55 @@
 
 
         //console.log(url);
-        var url = "{{ form_id }}";
-        $.get( "/getform/" + url, function( data ) {
-            form = data;
-            $("#myform").dform(form);
-        });
+        
+            $("#myform").dform({
+                "action": "/submit",
+                "html": [
+                    {
+                        "data-role": "fieldcontain",
+                        "html": {
+                            "data-mini": "true",
+                            "data-role": "controlgroup",
+                            "data-type": "horizontal",
+                            "html": [
+                                {
+                                    "caption": "Test1",
+                                    "name": "test1",
+                                    "type": "radio"
+                                },
+                                {
+                                    "caption": "Test1",
+                                    "name": "test1",
+                                    "type": "radio"
+                                }
+                            ],
+                            "legend": "Important question",
+                            "type": "fieldset"
+                        },
+                        "options": {
+                            "mamma": "Mamma",
+                            "pappa": "pappa"
+                        },
+                        "type": "div"
+                    },
+                    {
+                        "caption": "kjhksehfkjhfr",
+                        "id": "6192449487634432",
+                        "name": "6192449487634432",
+                        "type": "text"
+                    },
+                    {
+                        "name": "form_id",
+                        "type": "hidden",
+                        "value": "5629499534213120"
+                    },
+                    {
+                        "type": "submit",
+                        "value": "Spara checklistan!"
+                    }
+                ],
+                "method": "post"
+            });
         /*
         var url = window.location.pathname;
         var numberPattern = /\d+/g;
@@ -54,6 +98,9 @@
             return $(this).wrap('<div >').attr('data-mini','true').parent(); 
         });
         */
+
+        //var cnt = $(".ui-radio").contents()
+        //$(".ui-radio").replaceWith(cnt);
 
     	$.dform.addType("h2", function(options) {
             // Return a new button element that has all options that
@@ -86,32 +133,350 @@
 <form id="myform"></form>
 
 <br><br><br>
-<!--<div data-role="fieldcontain" data-controltype="radiobuttons">
+<div data-role="content">
+
+        <h2>
+            Konsultchecklista - Utvändiga skador
+        </h2>
+        <form id="form" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+            <div id="checkboxes1" data-role="fieldcontain">
+            <div data-role="fieldcontain">
             <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
                 <legend>
                     Fasad
                 </legend>
-                <input id="radio1" name="" value="1" type="radio">
-                <label for="radio1">
+                <input id="radio6" name="fasad" value="soder" type="radio">
+                <label for="radio6">
                     Söder
                 </label>
-                <input id="radio2" name="" value="2" type="radio">
-                <label for="radio2">
+                <input id="radio7" name="fasad" value="vaster" type="radio">
+                <label for="radio7">
                     Väster
                 </label>
-                <input id="radio3" name="" value="3" type="radio">
-                <label for="radio3">
+                <input id="radio8" name="fasad" value="norr" type="radio">
+                <label for="radio8">
                     Norr
                 </label>
-                <input id="radio4" name="" value="4" type="radio">
-                <label for="radio4">
+                <input id="radio9" name="fasad" value="oster" type="radio">
+                <label for="radio9">
                     Öster
                 </label>
-            </fieldset> -->
-
-            <div id="home" data-role="page"> 
-
-</div> 
+            </fieldset>
+        </div>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Fönstertyp
+                </legend>
+                <input id="radio1" name="fonstertyp" value="1" type="radio">
+                <label for="radio1">
+                    1
+                </label>
+                <input id="radio2" name="fonstertyp" value="2" type="radio">
+                <label for="radio2">
+                    2
+                </label>
+                <input id="radio3" name="fonstertyp" value="3" type="radio">
+                <label for="radio3">
+                    3
+                </label>
+                <input id="radio4" name="fonstertyp" value="4" type="radio">
+                <label for="radio4">
+                    4
+                </label>
+                <input id="radio5" name="fonstertyp" value="5" type="radio">
+                <label for="radio5">
+                    5
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <label for="textinput2">
+                Fönsternummer/litterering
+            </label>
+            <input name="fonsternummer" id="textinput2" placeholder="" value="" type="text"
+            data-mini="true">
+        </div>
+        <h3>
+            Bild
+        </h3>
+        <input id="fileinput1" data-maxwidth="300" data-maxheight="300" type="file" name="file" class="imageinput" />
+        <div id="imageinfo1"></div>
+        <img id="outputImage1" />
+        <br />
+        <h2>
+            Skador
+        </h2>
+        <h3>
+            Färgskador
+        </h3>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Karmfront
+                </legend>
+                <input id="radio10" name="fargskada1" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada1" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada1" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada1" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Karmfront
+                </legend>
+                <input id="radio10" name="fargskada2" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada2" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada2" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada2" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Karmfals
+                </legend>
+                <input id="radio10" name="fargskada2-1" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada2-1" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada2-1" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada2-1" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Karmmellansida
+                </legend>
+                <input id="radio10" name="fargskada3" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada3" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada3" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada3" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Bågfront
+                </legend>
+                <input id="radio10" name="fargskada4" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada4" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada4" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada4" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Synlig bågmellansida
+                </legend>
+                <input id="radio10" name="fargskada5" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada5" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada5" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada5" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Dold bågmellansida
+                </legend>
+                <input id="radio10" name="fargskada6" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada6" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada6" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada6" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Bågkanter
+                </legend>
+                <input id="radio10" name="fargskada7" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada7" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada7" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada7" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Lister/foder
+                </legend>
+                <input id="radio10" name="fargskada8" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada8" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada8" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada8" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Fönsterbläck/fönsterbräda
+                </legend>
+                <input id="radio10" name="fargskada9" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada9" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada9" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada9" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup" data-type="horizontal" data-mini="true">
+                <legend>
+                    Droppbläck/droppbräda
+                </legend>
+                <input id="radio10" name="fargskada10" value="1" type="radio">
+                <label for="radio10">
+                    Inga
+                </label>
+                <input id="radio11" name="fargskada10" value="2" type="radio">
+                <label for="radio11">
+                    Små
+                </label>
+                <input id="radio12" name="fargskada10" value="3" type="radio">
+                <label for="radio12">
+                    Måttliga
+                </label>
+                <input id="radio13" name="fargskada10" value="4" type="radio">
+                <label for="radio13">
+                    Kraftiga
+                </label>
+            </fieldset>
+        </div>
+        <h3>
+            Bild
+        </h3>
+        <input id="fileinput2" data-maxwidth="300" data-maxheight="300" type="file" name="file" class="imageinput" />
+        <div id="imageinfo2"></div>
+        <img id="outputImage2" />
+        <br />
+        <div data-role="fieldcontain">
+                <label for="textarea1">
+                        Kommentar
+                </label>
+                <textarea name="kommentar1" id="textarea1" placeholder="" data-mini="true"></textarea>
+        </div>
 	</div><!-- /content -->
 
 	<div data-role="footer">

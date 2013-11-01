@@ -527,6 +527,7 @@
 		 */
 		"type" : function (options, type) {
 			if ($.dform.options.prefix) {
+
 				this.addClass($.dform.options.prefix + type);
 			}
 		},

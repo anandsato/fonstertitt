@@ -18,6 +18,7 @@ import webapp2
 import os
 from google.appengine.ext import db
 from google.appengine.api import images
+from collections import OrderedDict
 import jinja2
 import base64
 import json
@@ -32,12 +33,10 @@ class Submissions(db.Expando):
 	form_id = db.IntegerProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
 
-
 class Forms(db.Model):
 	user_id = db.IntegerProperty()
 	name = db.StringProperty()
 	created = db.DateTimeProperty(auto_now_add = True)
-
 
 class FormComponents(db.Model):
 	form_id = db.IntegerProperty()
@@ -55,9 +54,24 @@ class FormComponents(db.Model):
 def gql_json_parser(query_obj, form_id):
     all_components = []
     for e in query_obj:
-    	form_components = {"name": str(e.key().id()), "id": str(e.key().id()), "type": e.input_type, "caption": e.caption}
-    	if e.options:
-    		form_components['options'] = json.loads(e.options)
+    	if e.input_type == 'radiobuttons' and e.options:
+    		logging.error(e.options)
+    		opts = json.loads(e.options)
+    		radio_values = []
+    		for elm in opts:
+    			radio = {"type": "radio"}
+    			radio["name"] = str(e.key().id())
+    			radio["caption"] = elm.capitalize()
+    			radio["value"] = elm
+    			radio["id"] = elm
+    			radio_values.append(radio)
+    		form_components = { "type": 'div',"data-role": 'fieldcontain',
+    							"html": { "type": 'fieldset',"data-role": "controlgroup", "caption": e.caption, "data-type": "horizontal", "data-mini": "true", "html":  radio_values }}
+    	elif e.input_type == "h2":
+    		form_components = { "type": e.input_type, "html": e.caption}
+
+    	else:
+    		form_components = {"name": str(e.key().id()), "id": str(e.key().id()), "type": e.input_type, "caption": e.caption}
     	if e.input_type == 'file':
     		form_components['class'] = 'image_file'
     	all_components.append(form_components)
@@ -72,14 +86,13 @@ def generate_frmb_json(query_obj):
         if e.input_type == 'radiobuttons':
         	form_components['title'] = e.caption
         	form_components['cssClass'] = "radio"
-        	#transforming the dictionary to something jQuery Formbuilder can understand
-    		d = json.loads(e.options)
-    		logging.error(d)
+        	#transforming the options array to something jQuery Formbuilder can understand
+    		opts = json.loads(e.options)
     		values = {}
     		i = 1
-    		for k,v in d.items():
+    		for elm in opts:
     			i += 1
-    			values[i] = {"value": v, "baseline": "false"}
+    			values[i] = {"value": elm, "baseline": "false"}
     		form_components['values'] = values
     		logging.error(values)
     	if e.input_type == 'text':
@@ -87,6 +100,12 @@ def generate_frmb_json(query_obj):
     		form_components['values'] = e.caption
     	if e.input_type == 'file':
     		form_components['cssClass'] = "file"
+    		form_components['values'] = e.caption
+    	if e.input_type == 'h2':
+    		form_components['cssClass'] = "headline"
+    		form_components['values'] = e.caption
+    	if e.input_type == 'textarea':
+    		form_components['cssClass'] = "textarea"
     		form_components['values'] = e.caption
     	
 
@@ -110,16 +129,24 @@ class MainHandler(webapp2.RequestHandler):
         self.write(self.render_str(template, **kw))
 class TestHandler(MainHandler):
 	def get(self):
-		newform = FormComponents()
-		newform.form_id = 1
-		newform.component_type = "input_field"
-		newform.input_type = "text"
-		newform.caption = "What is your name?"
-		newform.form_order = 1
-		newform.put()
+		fields = FormComponents.all().filter("input_type", "radiobuttons")
+		if fields:
+			i = 0
+			for f in fields:
+				d = json.loads(f.options)
+				if type(d) == dict:
+					self.write(f.key().id())
+					#self.write(d)
+					opts = []
+					for k,v in d.items():
+						opts.append(v)
+					self.write(opts)
+					self.write('<br>')
+					i += 1
+				f.options = json.dumps(opts)
+				f.put()
+			self.write(i)
 
-		
-		self.write(newform.key().id())
 
 class FormHandler(MainHandler):
 	def get(self,form_id_path=""):
@@ -127,12 +154,18 @@ class FormHandler(MainHandler):
 			form_id = int(form_id_path)
 			logging.error(form_id)
 			query_data = FormComponents.get_by_form_id(form_id)
+			form = Forms.get_by_id(form_id)
+			if form:
+				logging.error(form.name)
+				form_name = form.name
 		else:
 			form_id = ""
 			logging.error("No form ID")
 			query_data = FormComponents.all().order('form_order')
 		json_query_data = gql_json_parser(query_data, form_id)
 		result = {'action': '/submit', 'method': 'post', 'html': json_query_data}
+		if form_name:
+			result['name'] = form_name
 		self.response.headers['Content-Type'] = 'application/json'
 		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
 
@@ -142,6 +175,10 @@ class LoadFormHandler(MainHandler):
 			form_id = int(form_id_path)
 			logging.error(form_id)
 			query_data = FormComponents.get_by_form_id(form_id)
+			form = Forms.get_by_id(form_id)
+			if form:
+				logging.error(form.name)
+				form_name = form.name
 
 		else:
 			form_id = ""
@@ -149,6 +186,8 @@ class LoadFormHandler(MainHandler):
 			query_data = FormComponents.all().order('form_order')
 		result = generate_frmb_json(query_data)
 		output = {}
+		if form_name:
+			output['form_name'] = form_name
 		output['form_id'] = form_id
 		output['form_structure'] = result
 		self.response.headers['Content-Type'] = 'application/json'
@@ -158,26 +197,38 @@ class SubmissionsHandler(MainHandler):
 	def get(self,form_id_path=""):
 		if form_id_path:
 			form_id = int(form_id_path)
-			logging.error(form_id)
 			submitted_entries = Submissions.all().filter('form_id =', form_id).order('created')
 			if submitted_entries:
 				submitted_entries = list(submitted_entries)
 			query_data = FormComponents.all().filter('form_id =', form_id).filter('component_type =','input_field').order('created')
 			if query_data:
 				query_data = list(query_data)
+			image_list = FormComponents.all().filter('form_id =', form_id).filter('component_type =','image').order('created')
+			if image_list:
+				image_list = list(image_list)
+			images = [il.key().id() for il in image_list]
 			headers = [e.caption for e in query_data]
-			question_ids = [ e.key().id() for e in query_data]
+			question_ids = [e.key().id() for e in query_data]
 			se = [ s.key().id() for s in submitted_entries]
 			output = []
+			image_output = []
 			for e in submitted_entries:
 				result = []
+
 				for q in question_ids:
 					try:
 						result.append(getattr(e, str(q)))
 					except AttributeError:
 						result.append("---")
 				output.append(result)
-			self.render("front.html", output = output, headers = headers)
+				for img in images:
+					try:
+						if getattr(e, str(img)):
+							image_output.append([e.key().id(),img])
+					except AttributeError:
+						continue
+			logging.error(image_output)
+			self.render("front.html", output = output, headers = headers, image_output = image_output)
 		else:
 			form_id = ""
 			logging.error("No form ID")
@@ -235,22 +286,28 @@ class BuilderHandler(MainHandler):
 	def post(self):
 		log = logging.error
 		form_data = json.loads(urllib.unquote_plus(self.request.body))
-		
+		log(form_data)
 		if form_data["form_id"] and form_data["form_id"].isdigit():
 			log("yay we have an ID")
 			form = Forms.get_by_id(int(form_data["form_id"]))
 			if form:
 				form_id = int(form_data["form_id"])
+				if form_data["name"]:
+					form.name = form_data["name"]
+					form.put()
 			else:
 				self.write("No such ID in DB")
 		else:
 			log("we have to get a new form ID")
 			new_form = Forms()
+			if form_data["name"]:
+				new_form.name = form_data["name"]
 			new_form.user_id = 1
 			new_form.put()
 			form_id = new_form.key().id()
 		log(str(form_id))
 		form_elements = form_data['html']
+
 		if isinstance(form_elements, list) and form_elements != []:
 			logging.error("It is a list, and it's not empty")
 			i = 0
@@ -276,9 +333,16 @@ class BuilderHandler(MainHandler):
 				if elm['input_type'] == 'file':
 					newfc.input_type = 'file'
 					newfc.component_type = 'image'
+				if elm['input_type'] == 'textarea':
+					newfc.input_type = 'textarea'
+					newfc.component_type = 'input_field'
+				if elm['input_type'] == 'headline':
+					newfc.input_type = 'h2'
+					newfc.component_type = 'info_field'
 				newfc.caption = elm['caption']
 				newfc.form_order = i
 				if 'options' in elm.keys():
+					log(elm['options'])
 					newfc.options = json.dumps(elm['options'])
 				newfc.put()
 		self.write(form_id)
@@ -308,10 +372,7 @@ class SubmitExpando(MainHandler):
 				result = (e,query)
 				output.append(result)
 			se = Submissions()
-			imagelist = ['imagedata1','imagedata2','imagedata3','imagedata4','imagedata5']
 			for o in output:
-				if o[0] in imagelist:
-					continue
 				if o[0] == "form_id":
 					logging.error("Form ID is: " + o[1])
 					se.form_id = int(o[1])
@@ -325,17 +386,13 @@ class SubmitExpando(MainHandler):
 					continue
 				setattr(se,o[0],o[1])
 			se.put()
-			self.write(se.key().id())
+			self.redirect("/forms", permanent=True)
 
 
 class DrawHandler(MainHandler):
 	def get(self):
 		self.render("drawingboard.html")
         
-
-
-
-
 
 
 app = webapp2.WSGIApplication([
