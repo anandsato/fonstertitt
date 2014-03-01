@@ -18,6 +18,12 @@ indexes:
 
 - kind: FormComponents
   properties:
+  - name: component_type
+  - name: form_id
+  - name: form_order
+
+- kind: FormComponents
+  properties:
   - name: form_id
   - name: form_order
 

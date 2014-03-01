@@ -17,30 +17,31 @@
 			serialize_prefix: 'frmb',
 			css_ol_sortable_class : 'ol_opt_sortable',
 			messages: {
-				save				: "Save",
-				add_new_field		: "Add New Field...",
-				text				: "Text Field",
-				title				: "Title",
+				save				: "Spara",
+				add_new_field		: "Lägg till ny fråga...",
+				text				: "Textfält",
+				title				: "Benämning",
 				paragraph			: "Textarea",
-				checkboxes			: "Checkboxes",
-				radio				: "Radio: Flervalsfrågor",
+				checkboxes			: "Flera alternativ - flera svar",
+				radio				: "Flera alternativ - ett svar",
 				select				: "Select List",
-				text_field			: "Text Field",
+				text_field			: "Textfält",
 				label				: "Label",
 				paragraph_field		: "Textarea",
 				select_options		: "Select Options",
-				add					: "Add",
-				checkbox_group		: "Checkbox Group",
-				remove_message		: "Are you sure you want to remove this element?",
-				remove				: "Remove",
-				radio_group			: "Radio Group",
-				selections_message	: "Allow Multiple Selections",
-				hide				: "Hide",
-				required			: "Required",
-				show				: "Show",
-				file 				: "Image",
-				file_text 			: "Image Input Name",
-				headline			: "Rubrik - H2"
+				add					: "Lägg till",
+				checkbox_group		: "Flera frågor - flera svar",
+				remove_message		: "Säker på att du vill ta bort den här frågan?",
+				remove				: "Ta bort",
+				radio_group			: "Flera frågor - ett svar",
+				selections_message	: "Tillåt flera svar",
+				hide				: "Dölj",
+				required			: "Obligatorisk",
+				show				: "Visa",
+				file 				: "Bild",
+				file_text 			: "Bildnamn",
+				headline			: "Rubrik - H2",
+
 
 			}
 		};
@@ -84,7 +85,7 @@
 					select += '<option value="file">' + opts.messages.file + '</option>';
 					select += '<option value="textarea">' + opts.messages.paragraph + '</option>';
 					select += '<option value="headline">' + opts.messages.headline + '</option>';
-					//select += '<option value="checkbox">' + opts.messages.checkboxes + '</option>';
+					select += '<option value="checkbox">' + opts.messages.checkboxes + '</option>';
 					select += '<option value="radio">' + opts.messages.radio + '</option>';
 					//select += '<option value="select">' + opts.messages.select + '</option>';
 					// Build the control box and search button content
@@ -174,7 +175,7 @@
 						appendFileInput(values, required, field_id);
 						break;
 					case 'checkbox':
-						appendCheckboxGroup(values, options, required);
+						appendCheckboxGroup(values, options, required, field_id);
 						break;
 					case 'radio':
 						appendRadioGroup(values, options, required, field_id);
@@ -215,14 +216,14 @@
 					appendFieldLi(opts.messages.file_text, field, required, help, field_id);
 				};
 			// adds a checkbox element
-			var appendCheckboxGroup = function (values, options, required) {
+			var appendCheckboxGroup = function (values, options, required, field_id) {
 					var title = '';
 					if (typeof (options) === 'object') {
 						title = options[0];
 					}
 					field += '<div class="chk_group">';
 					field += '<div class="frm-fld"><label>' + opts.messages.title + '</label>';
-					field += '<input type="text" name="title" value="' + title + '" /></div>';
+					field += '<input type="text" id="' + field_id + '" name="title" value="' + title + '" /></div>';
 					field += '<div class="false-label">' + opts.messages.select_options + '</div>';
 					field += '<div class="fields">';
 
@@ -461,6 +462,7 @@
 							data: blob,
 							success: function (e) {
 								console.log(e);
+								alert("Checklista sparad!");
 								//window.location.href = "/forms";
 
 							}
@@ -533,17 +535,21 @@
 							break;							
 						case 'checkbox':
 							c = 1;
+							var inputOptions = new Array();
 							$('#' + $(this).attr('id') + ' input[type=text]').each(function () {
 								if ($(this).attr('name') === 'title') {
 									serialStr += opts.prepend + '[' + li_count + '][title]=' + encodeURIComponent($(this).val());
 									elementJson['caption'] = $(this).val();
+									elementJson['id'] = $(this).attr('id');
 								}
 								else {
 									serialStr += opts.prepend + '[' + li_count + '][values][' + c + '][value]=' + encodeURIComponent($(this).val());
+									inputOptions.push($(this).val());
 									serialStr += opts.prepend + '[' + li_count + '][values][' + c + '][baseline]=' + $(this).prev().is(':checked');
 								}
 								c++;
 							});
+							elementJson['options'] = inputOptions;
 							break;
 						case 'radio':
 							c = 1;

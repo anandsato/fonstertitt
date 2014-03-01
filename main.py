@@ -44,7 +44,7 @@ class FormComponents(db.Model):
 	input_type = db.StringProperty()
 	caption = db.StringProperty()
 	options = db.StringProperty()
-	form_order = db.IntegerProperty()
+	form_order = db.IntegerProperty(indexed = True)
 	created = db.DateTimeProperty(auto_now_add = True)
 
 	@classmethod
@@ -54,22 +54,24 @@ class FormComponents(db.Model):
 def gql_json_parser(query_obj, form_id):
     all_components = []
     for e in query_obj:
-    	if e.input_type == 'radiobuttons' and e.options:
+    	if e.input_type == 'radiobuttons' or e.input_type == 'checkbox' and e.options:
     		logging.error(e.options)
     		opts = json.loads(e.options)
     		radio_values = []
     		for elm in opts:
-    			radio = {"type": "radio"}
-    			radio["name"] = str(e.key().id())
-    			radio["caption"] = elm.capitalize()
-    			radio["value"] = elm
-    			radio["id"] = elm
-    			radio_values.append(radio)
+    			if e.input_type == 'radiobuttons':
+    				field = {"type": "radio"}
+    			if e.input_type == 'checkbox':
+    				field = {"type": "checkbox"}
+    			field["name"] = str(e.key().id())
+    			field["caption"] = elm.capitalize()
+    			field["value"] = elm
+    			field["id"] = elm
+    			radio_values.append(field)
     		form_components = { "type": 'div',"data-role": 'fieldcontain',
     							"html": { "type": 'fieldset',"data-role": "controlgroup", "caption": e.caption, "data-type": "horizontal", "data-mini": "true", "html":  radio_values }}
     	elif e.input_type == "h2":
     		form_components = { "type": e.input_type, "html": e.caption}
-
     	else:
     		form_components = {"name": str(e.key().id()), "id": str(e.key().id()), "type": e.input_type, "caption": e.caption}
     	if e.input_type == 'file':
@@ -86,6 +88,18 @@ def generate_frmb_json(query_obj):
         if e.input_type == 'radiobuttons':
         	form_components['title'] = e.caption
         	form_components['cssClass'] = "radio"
+        	#transforming the options array to something jQuery Formbuilder can understand
+    		opts = json.loads(e.options)
+    		values = {}
+    		i = 1
+    		for elm in opts:
+    			i += 1
+    			values[i] = {"value": elm, "baseline": "false"}
+    		form_components['values'] = values
+    		logging.error(values)
+    	if e.input_type == 'checkbox':
+        	form_components['title'] = e.caption
+        	form_components['cssClass'] = "checkbox"
         	#transforming the options array to something jQuery Formbuilder can understand
     		opts = json.loads(e.options)
     		values = {}
@@ -147,9 +161,32 @@ class TestHandler(MainHandler):
 				f.put()
 			self.write(i)
 
+def generate_form_json(form_id_path):
+	if form_id_path:
+		form_id = int(form_id_path)
+		logging.error(form_id)
+		query_data = FormComponents.get_by_form_id(form_id)
+		form = Forms.get_by_id(form_id)
+		if form:
+			logging.error(form.name)
+			form_name = form.name
+	else:
+		form_id = ""
+		logging.error("No form ID")
+		query_data = FormComponents.all().order('form_order')
+	json_query_data = gql_json_parser(query_data, form_id)
+	result = {'action': '/submit', 'method': 'post', 'html': json_query_data}
+	if form_name:
+		result['name'] = form_name
+	return(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
+
 
 class FormHandler(MainHandler):
 	def get(self,form_id_path=""):
+		if form_id_path:
+			self.response.headers['Content-Type'] = 'application/json'
+			self.write(generate_form_json(form_id_path))
+		"""
 		if form_id_path:
 			form_id = int(form_id_path)
 			logging.error(form_id)
@@ -167,7 +204,7 @@ class FormHandler(MainHandler):
 		if form_name:
 			result['name'] = form_name
 		self.response.headers['Content-Type'] = 'application/json'
-		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
+		self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))"""
 
 class LoadFormHandler(MainHandler):
 	def get(self,form_id_path=""):
@@ -197,29 +234,34 @@ class SubmissionsHandler(MainHandler):
 	def get(self,form_id_path=""):
 		if form_id_path:
 			form_id = int(form_id_path)
+			form_data = Forms.get_by_id(form_id)
+			form_name = form_data.name
+
 			submitted_entries = Submissions.all().filter('form_id =', form_id).order('created')
 			if submitted_entries:
 				submitted_entries = list(submitted_entries)
-			query_data = FormComponents.all().filter('form_id =', form_id).filter('component_type =','input_field').order('created')
+			query_data = FormComponents.all().filter('form_id =', form_id).filter('component_type =','input_field').order('form_order')
 			if query_data:
 				query_data = list(query_data)
-			image_list = FormComponents.all().filter('form_id =', form_id).filter('component_type =','image').order('created')
+			image_list = FormComponents.all().filter('form_id =', form_id).filter('component_type =','image').order('form_order')
 			if image_list:
 				image_list = list(image_list)
 			images = [il.key().id() for il in image_list]
 			headers = [e.caption for e in query_data]
+			headers.append("Ta bort")
 			question_ids = [e.key().id() for e in query_data]
 			se = [ s.key().id() for s in submitted_entries]
 			output = []
 			image_output = []
 			for e in submitted_entries:
 				result = []
-
+	
 				for q in question_ids:
 					try:
 						result.append(getattr(e, str(q)))
 					except AttributeError:
 						result.append("---")
+				result.append(str(e.key().id()))		
 				output.append(result)
 				for img in images:
 					try:
@@ -228,7 +270,7 @@ class SubmissionsHandler(MainHandler):
 					except AttributeError:
 						continue
 			logging.error(image_output)
-			self.render("front.html", output = output, headers = headers, image_output = image_output)
+			self.render("front.html", output = output, headers = headers, image_output = image_output, name = form_name)
 		else:
 			form_id = ""
 			logging.error("No form ID")
@@ -311,7 +353,9 @@ class BuilderHandler(MainHandler):
 		if isinstance(form_elements, list) and form_elements != []:
 			logging.error("It is a list, and it's not empty")
 			i = 0
+			element_ids = []
 			for elm in form_elements:
+				log(elm['id'])
 				if elm['id'] == "undefined":
 					log("ID is undef")
 					newfc = FormComponents()
@@ -329,7 +373,9 @@ class BuilderHandler(MainHandler):
 				if elm['input_type'] == 'radio':
 					newfc.input_type = 'radiobuttons'
 					newfc.component_type = 'input_field'
-				newfc.caption = elm['caption']
+				if elm['input_type'] == 'checkbox':
+					newfc.input_type = 'checkbox'
+					newfc.component_type = 'input_field'
 				if elm['input_type'] == 'file':
 					newfc.input_type = 'file'
 					newfc.component_type = 'image'
@@ -345,6 +391,18 @@ class BuilderHandler(MainHandler):
 					log(elm['options'])
 					newfc.options = json.dumps(elm['options'])
 				newfc.put()
+				elm_id = newfc.key().id()
+				element_ids.append(elm_id)
+		logging.error(element_ids)
+		#delete removed form elements
+		existing_elements = FormComponents.get_by_form_id(form_id)
+		for ex_elm in existing_elements:
+			logging.error(ex_elm.key().id())
+			if ex_elm.key().id() in element_ids:
+				logging.error("Yes!")
+			else:
+				logging.error("No! Deleting: " + str(ex_elm.key().id()))
+				ex_elm.delete()
 		self.write(form_id)
 
 class OverviewHandler(MainHandler):
@@ -368,11 +426,17 @@ class SubmitExpando(MainHandler):
 		if variable_list:
 			output = []
 			for e in variable_list:
-				query = self.request.get(e)
+				query = self.request.get_all(e)
+				if len(query) < 2:
+					query = query[0]
 				result = (e,query)
 				output.append(result)
 			se = Submissions()
+			logging.error(output)
 			for o in output:
+				if isinstance(o[1], list):
+					setattr(se,o[0],", ".join(o[1]))
+					continue	
 				if o[0] == "form_id":
 					logging.error("Form ID is: " + o[1])
 					se.form_id = int(o[1])
@@ -386,17 +450,46 @@ class SubmitExpando(MainHandler):
 					continue
 				setattr(se,o[0],o[1])
 			se.put()
-			self.redirect("/forms", permanent=True)
+			logging.error(variable_list)
+			self.render("goback.html")
 
 
 class DrawHandler(MainHandler):
 	def get(self):
 		self.render("drawingboard.html")
-        
+
+class AllFormsHandler(MainHandler):
+	def get(self):
+		all_forms = Forms.all()
+		form_json = []
+		for f in all_forms:
+			form_json.append(json.loads(generate_form_json(f.key().id())))
+		self.response.headers['Content-Type'] = 'application/json'
+		self.response.out.write(json.dumps(form_json, sort_keys=True, indent=4, separators=(',', ': ')))
+
+class DeleteHandler(MainHandler):
+	def post(self):
+		e_id = self.request.get("id")
+		e_type = self.request.get("type")
+		if e_id and e_type:
+			if e_type == "submission":
+				sub = Submissions.get_by_id(int(e_id))
+				if sub:
+					sub.delete()
+			if e_type == "form":
+				form = Forms.get_by_id(int(e_id))
+				if form:
+					form.delete()
+					fc = FormComponents.get_by_form_id(int(e_id))
+					if fc:
+						for e in fc:
+							e.delete()
+			logging.error(e_id + " " + e_type)
+			self.write(e_id + " " + e_type)
 
 
 app = webapp2.WSGIApplication([
-    ('/?', FrontHandler),
+    ('/?', OverviewHandler),
     ('/([0-9]+)', FrontHandler),
     ('/submissions', SubmissionsHandler),
     ('/submissions/([0-9]+)', SubmissionsHandler),
@@ -412,6 +505,8 @@ app = webapp2.WSGIApplication([
     ('/dform/?', DformHandler),
     ('/dform/([0-9]+)', DformHandler),
     ('/draw', DrawHandler),
-    ('/forms', OverviewHandler)
+    ('/forms', OverviewHandler),
+    ('/listallforms', AllFormsHandler),
+    ('/delete', DeleteHandler)
 
 ], debug=True)
